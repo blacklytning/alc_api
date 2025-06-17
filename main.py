@@ -1,9 +1,14 @@
+import os
+import shutil
 import sqlite3
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = FastAPI()
 
@@ -96,7 +101,7 @@ def init_database():
         )
     """
     )
-    
+
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS student_admissions (
@@ -302,8 +307,40 @@ def get_enquiry(enquiry_id: int):
 
 
 @app.post("/api/admission")
-def create_admission(admission: StudentAdmission):
-    """Create a new student admission"""
+async def create_admission(
+    firstName: str = Form(...),
+    middleName: str = Form(""),
+    lastName: str = Form(...),
+    certificateName: str = Form(...),
+    referredBy: str = Form(""),
+    joinedWhatsApp: bool = Form(...),
+    admissionDate: str = Form(...),
+    dateOfBirth: str = Form(...),
+    aadharNumber: str = Form(...),
+    correspondenceAddress: str = Form(...),
+    city: str = Form(...),
+    state: str = Form(...),
+    district: str = Form(...),
+    mobileNumber: str = Form(...),
+    alternateMobileNumber: str = Form(""),
+    educationalQualification: str = Form(...),
+    courseName: str = Form(...),
+    photo: UploadFile = File(...),
+    signature: UploadFile = File(...),
+):
+    # Save files with a clear identifier (e.g., mobile number)
+    photo_path = os.path.join(UPLOAD_FOLDER, f"{mobileNumber}_photo_{photo.filename}")
+    signature_path = os.path.join(
+        UPLOAD_FOLDER, f"{mobileNumber}_sign_{signature.filename}"
+    )
+
+    with open(photo_path, "wb") as photo_file:
+        shutil.copyfileobj(photo.file, photo_file)
+
+    with open(signature_path, "wb") as signature_file:
+        shutil.copyfileobj(signature.file, signature_file)
+
+    # Save form data to the database
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
 
@@ -318,23 +355,23 @@ def create_admission(admission: StudentAdmission):
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            admission.firstName,
-            admission.middleName,
-            admission.lastName,
-            admission.certificateName,
-            admission.referredBy,
-            admission.joinedWhatsApp,
-            admission.admissionDate,
-            admission.dateOfBirth,
-            admission.aadharNumber,
-            admission.correspondenceAddress,
-            admission.city,
-            admission.state,
-            admission.district,
-            admission.mobileNumber,
-            admission.alternateMobileNumber,
-            admission.educationalQualification,
-            admission.courseName,
+            firstName,
+            middleName,
+            lastName,
+            certificateName,
+            referredBy,
+            joinedWhatsApp,
+            admissionDate,
+            dateOfBirth,
+            aadharNumber,
+            correspondenceAddress,
+            city,
+            state,
+            district,
+            mobileNumber,
+            alternateMobileNumber,
+            educationalQualification,
+            courseName,
         ),
     )
 
@@ -346,6 +383,8 @@ def create_admission(admission: StudentAdmission):
         "message": "Admission completed successfully",
         "admission_id": admission_id,
         "status": "success",
+        "photo": f"{mobileNumber}_photo_{photo.filename}",
+        "signature": f"{mobileNumber}_sign_{signature.filename}",
     }
 
 
@@ -475,20 +514,24 @@ def get_stats():
         total_admissions = cursor.fetchone()[0]
 
         # Get course-wise stats
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT course_name, COUNT(*) as count 
             FROM student_enquiries 
             GROUP BY course_name 
             ORDER BY count DESC
-        """)
+        """
+        )
         enquiry_courses = cursor.fetchall()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT course_name, COUNT(*) as count 
             FROM student_admissions 
             GROUP BY course_name 
             ORDER BY count DESC
-        """)
+        """
+        )
         admission_courses = cursor.fetchall()
 
         conn.close()
@@ -496,11 +539,21 @@ def get_stats():
         return {
             "total_enquiries": total_enquiries,
             "total_admissions": total_admissions,
-            "conversion_rate": round((total_admissions / total_enquiries * 100) if total_enquiries > 0 else 0, 2),
-            "enquiry_by_course": [{"course": row[0], "count": row[1]} for row in enquiry_courses],
-            "admission_by_course": [{"course": row[0], "count": row[1]} for row in admission_courses]
+            "conversion_rate": round(
+                (
+                    (total_admissions / total_enquiries * 100)
+                    if total_enquiries > 0
+                    else 0
+                ),
+                2,
+            ),
+            "enquiry_by_course": [
+                {"course": row[0], "count": row[1]} for row in enquiry_courses
+            ],
+            "admission_by_course": [
+                {"course": row[0], "count": row[1]} for row in admission_courses
+            ],
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-
