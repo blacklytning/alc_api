@@ -1,6 +1,6 @@
 import sqlite3
 from typing import List, Dict, Any, Optional
-from models import StudentEnquiry, StudentAdmission
+from models import StudentEnquiry, Course, CourseUpdate
 
 DATABASE_FILE = "student_data.db"
 
@@ -76,6 +76,60 @@ def get_db_connection():
     """Get database connection"""
     return sqlite3.connect(DATABASE_FILE)
 
+
+def init_courses_table():
+    """Initialize the courses table"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS courses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_name TEXT NOT NULL UNIQUE,
+            fees INTEGER NOT NULL CHECK(fees > 0),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    # Create trigger to update updated_at timestamp
+    cursor.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS update_courses_timestamp 
+        AFTER UPDATE ON courses
+        BEGIN
+            UPDATE courses SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+        END;
+        """
+    )
+
+    # Insert default courses if table is empty
+    cursor.execute("SELECT COUNT(*) FROM courses")
+    count = cursor.fetchone()[0]
+    
+    if count == 0:
+        default_courses = [
+            ("MS-CIT", 2500),
+            ("ADVANCE TALLY - CIT", 3500),
+            ("ADVANCE TALLY - KLIC", 3000),
+            ("ADVANCE EXCEL - CIT", 2000),
+            ("ENGLISH TYPING - MKCL", 1500),
+            ("ENGLISH TYPING - CIT", 1800),
+            ("MARATHI TYPING - MKCL", 1500),
+            ("DTP - CIT", 2200),
+            ("IT - KLIC", 4000),
+            ("KLIC DIPLOMA", 5000),
+        ]
+        
+        cursor.executemany(
+            "INSERT INTO courses (course_name, fees) VALUES (?, ?)",
+            default_courses
+        )
+
+    conn.commit()
+    conn.close()
 
 class EnquiryRepository:
     @staticmethod
@@ -356,6 +410,211 @@ class AdmissionRepository:
             "photoFilename": row[18],
             "signatureFilename": row[19],
             "createdAt": row[20],
+        }
+
+
+class CourseRepository:
+    @staticmethod
+    def create(course: Course) -> int:
+        """Create a new course and return its ID"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(
+                "INSERT INTO courses (course_name, fees) VALUES (?, ?)",
+                (course.courseName, course.fees)
+            )
+            course_id = cursor.lastrowid
+            conn.commit()
+            return course_id
+        except sqlite3.IntegrityError:
+            raise ValueError(f"Course '{course.courseName}' already exists")
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_all() -> List[Dict[str, Any]]:
+        """Get all courses"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT id, course_name, fees, created_at, updated_at
+            FROM courses
+            ORDER BY course_name ASC
+            """
+        )
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        courses = []
+        for row in rows:
+            courses.append({
+                "id": row[0],
+                "courseName": row[1],
+                "fees": row[2],
+                "createdAt": row[3],
+                "updatedAt": row[4],
+            })
+
+        return courses
+
+    @staticmethod
+    def get_by_id(course_id: int) -> Optional[Dict[str, Any]]:
+        """Get course by ID"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT id, course_name, fees, created_at, updated_at
+            FROM courses
+            WHERE id = ?
+            """,
+            (course_id,)
+        )
+
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            return None
+
+        return {
+            "id": row[0],
+            "courseName": row[1],
+            "fees": row[2],
+            "createdAt": row[3],
+            "updatedAt": row[4],
+        }
+
+    @staticmethod
+    def update(course_id: int, course_update: CourseUpdate) -> bool:
+        """Update a course"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Build dynamic query based on provided fields
+        update_fields = []
+        update_values = []
+
+        if course_update.courseName is not None:
+            update_fields.append("course_name = ?")
+            update_values.append(course_update.courseName)
+
+        if course_update.fees is not None:
+            update_fields.append("fees = ?")
+            update_values.append(course_update.fees)
+
+        if not update_fields:
+            conn.close()
+            return False
+
+        update_values.append(course_id)
+        query = f"UPDATE courses SET {', '.join(update_fields)} WHERE id = ?"
+
+        try:
+            cursor.execute(query, update_values)
+            rows_affected = cursor.rowcount
+            conn.commit()
+            return rows_affected > 0
+        except sqlite3.IntegrityError:
+            raise ValueError(f"Course name already exists")
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete(course_id: int) -> bool:
+        """Delete a course"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("DELETE FROM courses WHERE id = ?", (course_id,))
+        rows_affected = cursor.rowcount
+        conn.commit()
+        conn.close()
+
+        return rows_affected > 0
+
+    @staticmethod
+    def search(search_term: str) -> List[Dict[str, Any]]:
+        """Search courses by name"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT id, course_name, fees, created_at, updated_at
+            FROM courses
+            WHERE course_name LIKE ?
+            ORDER BY course_name ASC
+            """,
+            (f"%{search_term}%",)
+        )
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        courses = []
+        for row in rows:
+            courses.append({
+                "id": row[0],
+                "courseName": row[1],
+                "fees": row[2],
+                "createdAt": row[3],
+                "updatedAt": row[4],
+            })
+
+        return courses
+
+    @staticmethod
+    def get_course_stats() -> Dict[str, Any]:
+        """Get course statistics"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Total courses
+        cursor.execute("SELECT COUNT(*) FROM courses")
+        total_courses = cursor.fetchone()[0]
+
+        # Average fees
+        cursor.execute("SELECT AVG(fees) FROM courses")
+        avg_fees = cursor.fetchone()[0] or 0
+
+        # Min and max fees
+        cursor.execute("SELECT MIN(fees), MAX(fees) FROM courses")
+        min_fees, max_fees = cursor.fetchone()
+
+        # Most expensive course
+        cursor.execute(
+            "SELECT course_name, fees FROM courses WHERE fees = (SELECT MAX(fees) FROM courses) LIMIT 1"
+        )
+        most_expensive = cursor.fetchone()
+
+        # Least expensive course
+        cursor.execute(
+            "SELECT course_name, fees FROM courses WHERE fees = (SELECT MIN(fees) FROM courses) LIMIT 1"
+        )
+        least_expensive = cursor.fetchone()
+
+        conn.close()
+
+        return {
+            "total_courses": total_courses,
+            "average_fees": round(avg_fees, 2),
+            "min_fees": min_fees or 0,
+            "max_fees": max_fees or 0,
+            "most_expensive": {
+                "course_name": most_expensive[0] if most_expensive else None,
+                "fees": most_expensive[1] if most_expensive else None
+            },
+            "least_expensive": {
+                "course_name": least_expensive[0] if least_expensive else None,
+                "fees": least_expensive[1] if least_expensive else None
+            }
         }
 
 

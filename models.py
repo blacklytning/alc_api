@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class StudentEnquiry(BaseModel):
@@ -41,3 +41,21 @@ class StudentAdmission(BaseModel):
     alternateMobileNumber: Optional[str] = ""
     educationalQualification: str
     courseName: str
+
+
+class Course(BaseModel):
+    courseName: str = Field(..., min_length=1, max_length=255)
+    fees: int = Field(..., gt=0, description="Course fees must be greater than 0")
+
+
+class CourseUpdate(BaseModel):
+    courseName: Optional[str] = Field(None, min_length=1, max_length=255)
+    fees: Optional[int] = Field(None, gt=0, description="Course fees must be greater than 0")
+
+
+class CourseResponse(BaseModel):
+    id: int
+    courseName: str
+    fees: int
+    createdAt: str
+    updatedAt: Optional[str] = None
