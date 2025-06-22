@@ -5,6 +5,8 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 UPLOAD_FOLDER = "uploads"
@@ -20,6 +22,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files to serve uploaded images
+app.mount("/uploads", StaticFiles(directory=UPLOAD_FOLDER), name="uploads")
 
 
 class StudentEnquiry(BaseModel):
@@ -123,6 +128,8 @@ def init_database():
             alternate_mobile_number TEXT,
             educational_qualification TEXT NOT NULL,
             course_name TEXT NOT NULL,
+            photo_filename TEXT,
+            signature_filename TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """
@@ -328,12 +335,17 @@ async def create_admission(
     photo: UploadFile = File(...),
     signature: UploadFile = File(...),
 ):
-    # Save files with a clear identifier (e.g., mobile number)
-    photo_path = os.path.join(UPLOAD_FOLDER, f"{mobileNumber}_photo_{photo.filename}")
-    signature_path = os.path.join(
-        UPLOAD_FOLDER, f"{mobileNumber}_sign_{signature.filename}"
-    )
+    # Generate unique filenames with timestamp and mobile number
+    import time
+    timestamp = str(int(time.time()))
+    
+    photo_filename = f"{mobileNumber}_{timestamp}_photo.{photo.filename.split('.')[-1]}"
+    signature_filename = f"{mobileNumber}_{timestamp}_signature.{signature.filename.split('.')[-1]}"
+    
+    photo_path = os.path.join(UPLOAD_FOLDER, photo_filename)
+    signature_path = os.path.join(UPLOAD_FOLDER, signature_filename)
 
+    # Save files
     with open(photo_path, "wb") as photo_file:
         shutil.copyfileobj(photo.file, photo_file)
 
@@ -351,8 +363,8 @@ async def create_admission(
             referred_by, joined_whatsapp, admission_date, date_of_birth,
             aadhar_number, correspondence_address, city, state, district,
             mobile_number, alternate_mobile_number, educational_qualification,
-            course_name
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            course_name, photo_filename, signature_filename
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             firstName,
@@ -372,6 +384,8 @@ async def create_admission(
             alternateMobileNumber,
             educationalQualification,
             courseName,
+            photo_filename,
+            signature_filename,
         ),
     )
 
@@ -383,8 +397,8 @@ async def create_admission(
         "message": "Admission completed successfully",
         "admission_id": admission_id,
         "status": "success",
-        "photo": f"{mobileNumber}_photo_{photo.filename}",
-        "signature": f"{mobileNumber}_sign_{signature.filename}",
+        "photo_filename": photo_filename,
+        "signature_filename": signature_filename,
     }
 
 
@@ -401,7 +415,7 @@ def get_all_admissions():
                    referred_by, joined_whatsapp, admission_date, date_of_birth,
                    aadhar_number, correspondence_address, city, state, district,
                    mobile_number, alternate_mobile_number, educational_qualification,
-                   course_name, created_at
+                   course_name, photo_filename, signature_filename, created_at
             FROM student_admissions
             ORDER BY created_at DESC
             """
@@ -432,7 +446,9 @@ def get_all_admissions():
                     "alternateMobileNumber": row[15],
                     "educationalQualification": row[16],
                     "courseName": row[17],
-                    "createdAt": row[18],
+                    "photoFilename": row[18],
+                    "signatureFilename": row[19],
+                    "createdAt": row[20],
                 }
             )
 
@@ -455,7 +471,7 @@ def get_admission(admission_id: int):
                    referred_by, joined_whatsapp, admission_date, date_of_birth,
                    aadhar_number, correspondence_address, city, state, district,
                    mobile_number, alternate_mobile_number, educational_qualification,
-                   course_name, created_at
+                   course_name, photo_filename, signature_filename, created_at
             FROM student_admissions
             WHERE id = ?
             """,
@@ -487,7 +503,9 @@ def get_admission(admission_id: int):
             "alternateMobileNumber": row[15],
             "educationalQualification": row[16],
             "courseName": row[17],
-            "createdAt": row[18],
+            "photoFilename": row[18],
+            "signatureFilename": row[19],
+            "createdAt": row[20],
         }
 
         return admission
@@ -496,6 +514,16 @@ def get_admission(admission_id: int):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@app.get("/api/file/{filename}")
+def get_file(filename: str):
+    """Serve uploaded files"""
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    else:
+        raise HTTPException(status_code=404, detail="File not found")
 
 
 @app.get("/api/stats")
