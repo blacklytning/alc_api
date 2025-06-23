@@ -21,6 +21,7 @@ class StudentEnquiry(BaseModel):
     educationalQualification: str
     courseName: str
     timing: str
+    handledBy: str
 
 
 class StudentAdmission(BaseModel):

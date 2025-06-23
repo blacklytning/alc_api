@@ -35,6 +35,7 @@ def init_database():
             educational_qualification TEXT NOT NULL,
             course_name TEXT NOT NULL,
             timing TEXT NOT NULL,
+            handled_by TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """
@@ -144,8 +145,8 @@ class EnquiryRepository:
                 first_name, middle_name, last_name, date_of_birth, gender,
                 marital_status, mother_tongue, aadhar_number, correspondence_address,
                 city, state, district, mobile_number, alternate_mobile_number,
-                category, educational_qualification, course_name, timing
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                category, educational_qualification, course_name, timing, handled_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 enquiry.firstName,
@@ -166,6 +167,7 @@ class EnquiryRepository:
                 enquiry.educationalQualification,
                 enquiry.courseName,
                 enquiry.timing,
+                enquiry.handledBy,
             ),
         )
 
@@ -185,7 +187,7 @@ class EnquiryRepository:
             SELECT id, first_name, middle_name, last_name, date_of_birth, gender,
                    marital_status, mother_tongue, aadhar_number, correspondence_address,
                    city, state, district, mobile_number, alternate_mobile_number,
-                   category, educational_qualification, course_name, timing, created_at
+                   category, educational_qualification, course_name, timing, handled_by, created_at
             FROM student_enquiries
             ORDER BY created_at DESC
             """
@@ -216,7 +218,8 @@ class EnquiryRepository:
                 "educationalQualification": row[16],
                 "courseName": row[17],
                 "timing": row[18],
-                "createdAt": row[19],
+                "handledBy": row[19],
+                "createdAt": row[20],
             })
 
         return enquiries
@@ -232,7 +235,7 @@ class EnquiryRepository:
             SELECT id, first_name, middle_name, last_name, date_of_birth, gender,
                    marital_status, mother_tongue, aadhar_number, correspondence_address,
                    city, state, district, mobile_number, alternate_mobile_number,
-                   category, educational_qualification, course_name, timing, created_at
+                   category, educational_qualification, course_name, timing, handled_by, created_at
             FROM student_enquiries
             WHERE id = ?
             """,
@@ -265,7 +268,8 @@ class EnquiryRepository:
             "educationalQualification": row[16],
             "courseName": row[17],
             "timing": row[18],
-            "createdAt": row[19],
+            "handledBy": row[19],
+            "createdAt": row[20],
         }
 
 
