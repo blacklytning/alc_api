@@ -9,16 +9,17 @@ from routers.admission import router as admission_router
 from routers.courses import router as course_router
 from routers.files import router as files_router
 from routers.stats import router as stats_router
+from routers.followups import router as followups_router
 
 # Import database initialization
-from database import init_database, init_courses_table
+from database import init_database, init_courses_table, init_followups_table
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = FastAPI(
     title="Student Management System API",
-    description="A comprehensive API for managing student enquiries, admissions, and courses",
+    description="A comprehensive API for managing student enquiries, admissions, courses, and follow-ups",
     version="1.0.0"
 )
 
@@ -40,6 +41,7 @@ app.include_router(admission_router)
 app.include_router(course_router)
 app.include_router(files_router)
 app.include_router(stats_router)
+app.include_router(followups_router)
 
 
 # Initialize database on startup
@@ -48,6 +50,7 @@ async def startup_event():
     """Initialize database tables on startup"""
     init_database()
     init_courses_table()
+    init_followups_table()
 
 
 @app.get("/")
@@ -59,6 +62,7 @@ def read_root():
             "enquiries": "/api/enquiries",
             "admissions": "/api/admissions", 
             "courses": "/api/courses",
+            "followups": "/api/followups",
             "stats": "/api/stats",
             "files": "/api/file/{filename}",
             "docs": "/docs",
