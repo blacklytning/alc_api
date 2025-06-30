@@ -1,18 +1,18 @@
 import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-# Import routers
-from routers.enquiry import router as enquiry_router
+# Import database initialization
+from database import init_courses_table, init_database, init_followups_table
 from routers.admission import router as admission_router
 from routers.courses import router as course_router
+# Import routers
+from routers.enquiry import router as enquiry_router
 from routers.files import router as files_router
-from routers.stats import router as stats_router
 from routers.followups import router as followups_router
-
-# Import database initialization
-from database import init_database, init_courses_table, init_followups_table
+from routers.stats import router as stats_router
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -20,7 +20,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app = FastAPI(
     title="Student Management System API",
     description="A comprehensive API for managing student enquiries, admissions, courses, and follow-ups",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Add CORS middleware to allow frontend requests (Verify for prod)
@@ -56,25 +56,16 @@ async def startup_event():
 @app.get("/")
 def read_root():
     return {
-        "message": "Student Management System API", 
+        "message": "Student Management System API",
         "version": "1.0.0",
         "endpoints": {
             "enquiries": "/api/enquiries",
-            "admissions": "/api/admissions", 
+            "admissions": "/api/admissions",
             "courses": "/api/courses",
             "followups": "/api/followups",
             "stats": "/api/stats",
             "files": "/api/file/{filename}",
             "docs": "/docs",
-            "redoc": "/redoc"
-        }
-    }
-
-
-@app.get("/health")
-def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "timestamp": "2025-01-01T00:00:00Z"
+            "redoc": "/redoc",
+        },
     }
