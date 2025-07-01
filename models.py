@@ -47,8 +47,7 @@ class StudentAdmission(BaseModel):
 
 class Course(BaseModel):
     courseName: str = Field(..., min_length=1, max_length=255)
-    fees: int = Field(..., gt=0,
-                      description="Course fees must be greater than 0")
+    fees: int = Field(..., gt=0, description="Course fees must be greater than 0")
 
 
 class CourseUpdate(BaseModel):
@@ -76,8 +75,7 @@ class FollowupCreate(BaseModel):
     next_followup_date: Optional[str] = Field(
         None, description="Next planned follow-up date (YYYY-MM-DD)"
     )
-    handled_by: str = Field(...,
-                            description="Staff member who handled the follow-up")
+    handled_by: str = Field(..., description="Staff member who handled the follow-up")
 
 
 class FollowupUpdate(BaseModel):
@@ -114,3 +112,30 @@ class EnquiryWithFollowups(BaseModel):
     followupCount: int
     latestNotes: Optional[str]
     followups: list[FollowupResponse]
+
+
+class InstituteSettings(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    address: Optional[str] = ""
+    phone: Optional[str] = ""
+    email: Optional[str] = ""
+    website: Optional[str] = ""
+
+
+class InstituteSettingsResponse(BaseModel):
+    id: int
+    name: str
+    address: Optional[str]
+    phone: Optional[str]
+    email: Optional[str]
+    website: Optional[str]
+    logo: Optional[str]
+    created_at: str
+    updated_at: Optional[str]
+
+
+class DatabaseStatsResponse(BaseModel):
+    lastBackup: Optional[str]
+    databaseSize: int
+    totalRecords: int
+    backupHistory: list

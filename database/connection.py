@@ -178,3 +178,52 @@ def init_followups_table():
 
     conn.commit()
     conn.close()
+
+
+def init_settings_table():
+    """Initialize the institute settings table"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS institute_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            address TEXT DEFAULT '',
+            phone TEXT DEFAULT '',
+            email TEXT DEFAULT '',
+            website TEXT DEFAULT '',
+            logo TEXT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    # Create trigger to update updated_at timestamp
+    cursor.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS update_institute_settings_timestamp
+        AFTER UPDATE ON institute_settings
+        BEGIN
+            UPDATE institute_settings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+        END;
+        """
+    )
+
+    # Insert default settings if table is empty
+    cursor.execute("SELECT COUNT(*) FROM institute_settings")
+    count = cursor.fetchone()[0]
+
+    if count == 0:
+        cursor.execute(
+            """
+            INSERT INTO institute_settings (name, address, phone, email, website)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            ("Your Institute Name", "", "", "", ""),
+        )
+
+    conn.commit()
+    conn.close()
