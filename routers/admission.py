@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Form, File, UploadFile
 from typing import Dict, Any
-from database import AdmissionRepository
+from database.admission_repository import AdmissionRepository
 from file_handler import FileHandler
 
 router = APIRouter(prefix="/api", tags=["admissions"])

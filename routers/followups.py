@@ -2,7 +2,8 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-from database import EnquiryRepository, FollowupRepository
+from database.enquiry_repository import EnquiryRepository
+from database.followup_repository import FollowupRepository
 from models import FollowupCreate, FollowupUpdate
 
 router = APIRouter(prefix="/api", tags=["followups"])

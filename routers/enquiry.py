@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 from models import StudentEnquiry
-from database import EnquiryRepository
+from database.enquiry_repository import EnquiryRepository
 
 router = APIRouter(prefix="/api", tags=["enquiries"])
 

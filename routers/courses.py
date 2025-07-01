@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Dict, Any, List, Optional
 from models import Course, CourseUpdate
-from database import CourseRepository
+from database.courses_repository import CourseRepository
 
 router = APIRouter(prefix="/api", tags=["courses"])
 

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 # Import database initialization
-from database import init_courses_table, init_database, init_followups_table
+from database.connection import init_courses_table, init_database, init_followups_table
 from routers.admission import router as admission_router
 from routers.courses import router as course_router
 # Import routers

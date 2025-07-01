@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
-from database import StatsRepository
+from database.stats_repository import StatsRepository
 
 router = APIRouter(prefix="/api", tags=["statistics"])
 
