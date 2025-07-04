@@ -12,22 +12,23 @@ class AdmissionRepository:
         cursor.execute(
             """
             INSERT INTO student_admissions (
-                first_name, middle_name, last_name, certificate_name,
-                referred_by, joined_whatsapp, admission_date, date_of_birth,
-                aadhar_number, correspondence_address, city, state, district,
-                mobile_number, alternate_mobile_number, educational_qualification,
-                course_name, photo_filename, signature_filename
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                first_name, middle_name, last_name, date_of_birth, gender,
+                marital_status, mother_tongue, aadhar_number,
+                correspondence_address, city, state, district,
+                mobile_number, alternate_mobile_number, category,
+                educational_qualification, course_name, timing,
+                certificate_name, referred_by,
+                photo_filename, signature_filename
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 admission_data["firstName"],
                 admission_data["middleName"],
                 admission_data["lastName"],
-                admission_data["certificateName"],
-                admission_data["referredBy"],
-                admission_data["joinedWhatsApp"],
-                admission_data["admissionDate"],
                 admission_data["dateOfBirth"],
+                admission_data["gender"],
+                admission_data["maritalStatus"],
+                admission_data["motherTongue"],
                 admission_data["aadharNumber"],
                 admission_data["correspondenceAddress"],
                 admission_data["city"],
@@ -35,8 +36,12 @@ class AdmissionRepository:
                 admission_data["district"],
                 admission_data["mobileNumber"],
                 admission_data["alternateMobileNumber"],
+                admission_data["category"],
                 admission_data["educationalQualification"],
                 admission_data["courseName"],
+                admission_data["timing"],
+                admission_data["certificateName"],
+                admission_data["referredBy"],
                 admission_data["photoFilename"],
                 admission_data["signatureFilename"],
             ),
@@ -55,11 +60,13 @@ class AdmissionRepository:
 
         cursor.execute(
             """
-            SELECT id, first_name, middle_name, last_name, certificate_name,
-                   referred_by, joined_whatsapp, admission_date, date_of_birth,
-                   aadhar_number, correspondence_address, city, state, district,
-                   mobile_number, alternate_mobile_number, educational_qualification,
-                   course_name, photo_filename, signature_filename, created_at
+            SELECT id, first_name, middle_name, last_name, date_of_birth,
+                   gender, marital_status, mother_tongue, aadhar_number,
+                   correspondence_address, city, state, district,
+                   mobile_number, alternate_mobile_number, category,
+                   educational_qualification, course_name, timing,
+                   certificate_name, referred_by,
+                   photo_filename, signature_filename, created_at
             FROM student_admissions
             ORDER BY created_at DESC
             """
@@ -76,23 +83,26 @@ class AdmissionRepository:
                     "firstName": row[1],
                     "middleName": row[2],
                     "lastName": row[3],
-                    "certificateName": row[4],
-                    "referredBy": row[5],
-                    "joinedWhatsApp": bool(row[6]),
-                    "admissionDate": row[7],
-                    "dateOfBirth": row[8],
-                    "aadharNumber": row[9],
-                    "correspondenceAddress": row[10],
-                    "city": row[11],
-                    "state": row[12],
-                    "district": row[13],
-                    "mobileNumber": row[14],
-                    "alternateMobileNumber": row[15],
+                    "dateOfBirth": row[4],
+                    "gender": row[5],
+                    "maritalStatus": row[6],
+                    "motherTongue": row[7],
+                    "aadharNumber": row[8],
+                    "correspondenceAddress": row[9],
+                    "city": row[10],
+                    "state": row[11],
+                    "district": row[12],
+                    "mobileNumber": row[13],
+                    "alternateMobileNumber": row[14],
+                    "category": row[15],
                     "educationalQualification": row[16],
                     "courseName": row[17],
-                    "photoFilename": row[18],
-                    "signatureFilename": row[19],
-                    "createdAt": row[20],
+                    "timing": row[18],
+                    "certificateName": row[19],
+                    "referredBy": row[20],
+                    "photoFilename": row[21],
+                    "signatureFilename": row[22],
+                    "createdAt": row[23],
                 }
             )
 
@@ -106,11 +116,13 @@ class AdmissionRepository:
 
         cursor.execute(
             """
-            SELECT id, first_name, middle_name, last_name, certificate_name,
-                   referred_by, joined_whatsapp, admission_date, date_of_birth,
-                   aadhar_number, correspondence_address, city, state, district,
-                   mobile_number, alternate_mobile_number, educational_qualification,
-                   course_name, photo_filename, signature_filename, created_at
+            SELECT id, first_name, middle_name, last_name, date_of_birth,
+                   gender, marital_status, mother_tongue, aadhar_number,
+                   correspondence_address, city, state, district,
+                   mobile_number, alternate_mobile_number, category,
+                   educational_qualification, course_name, timing,
+                   certificate_name, referred_by,
+                   photo_filename, signature_filename, created_at
             FROM student_admissions
             WHERE id = ?
             """,
@@ -128,21 +140,24 @@ class AdmissionRepository:
             "firstName": row[1],
             "middleName": row[2],
             "lastName": row[3],
-            "certificateName": row[4],
-            "referredBy": row[5],
-            "joinedWhatsApp": bool(row[6]),
-            "admissionDate": row[7],
-            "dateOfBirth": row[8],
-            "aadharNumber": row[9],
-            "correspondenceAddress": row[10],
-            "city": row[11],
-            "state": row[12],
-            "district": row[13],
-            "mobileNumber": row[14],
-            "alternateMobileNumber": row[15],
+            "dateOfBirth": row[4],
+            "gender": row[5],
+            "maritalStatus": row[6],
+            "motherTongue": row[7],
+            "aadharNumber": row[8],
+            "correspondenceAddress": row[9],
+            "city": row[10],
+            "state": row[11],
+            "district": row[12],
+            "mobileNumber": row[13],
+            "alternateMobileNumber": row[14],
+            "category": row[15],
             "educationalQualification": row[16],
             "courseName": row[17],
-            "photoFilename": row[18],
-            "signatureFilename": row[19],
-            "createdAt": row[20],
+            "timing": row[18],
+            "certificateName": row[19],
+            "referredBy": row[20],
+            "photoFilename": row[21],
+            "signatureFilename": row[22],
+            "createdAt": row[23],
         }
