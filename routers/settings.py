@@ -24,6 +24,7 @@ def get_institute_settings() -> Dict[str, Any]:
             return {
                 "id": 0,
                 "name": "Your Institute Name",
+                "centerCode": "",
                 "address": "",
                 "phone": "",
                 "email": "",
@@ -40,6 +41,7 @@ def get_institute_settings() -> Dict[str, Any]:
 @router.post("/settings/institute")
 def update_institute_settings(
     name: str = Form(...),
+    centerCode: str = Form(""),
     address: str = Form(""),
     phone: str = Form(""),
     email: str = Form(""),
@@ -54,6 +56,7 @@ def update_institute_settings(
 
         settings_data = {
             "name": name.strip(),
+            "centerCode": centerCode.strip(),
             "address": address.strip(),
             "phone": phone.strip(),
             "email": email.strip(),

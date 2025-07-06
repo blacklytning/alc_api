@@ -18,6 +18,7 @@ class SettingsRepository:
             CREATE TABLE IF NOT EXISTS institute_settings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
+                center_code TEXT DEFAULT '',
                 address TEXT DEFAULT '',
                 phone TEXT DEFAULT '',
                 email TEXT DEFAULT '',
@@ -47,10 +48,10 @@ class SettingsRepository:
         if count == 0:
             cursor.execute(
                 """
-                INSERT INTO institute_settings (name, address, phone, email, website)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO institute_settings (name, center_code, address, phone, email, website)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                ("Your Institute Name", "", "", "", ""),
+                ("Your Institute Name", "", "", "", "", ""),
             )
 
         conn.commit()
@@ -64,7 +65,7 @@ class SettingsRepository:
 
         cursor.execute(
             """
-            SELECT id, name, address, phone, email, website, logo, created_at, updated_at
+            SELECT id, name, center_code, address, phone, email, website, logo, created_at, updated_at
             FROM institute_settings
             ORDER BY id DESC
             LIMIT 1
@@ -78,13 +79,14 @@ class SettingsRepository:
             return {
                 "id": row[0],
                 "name": row[1],
-                "address": row[2],
-                "phone": row[3],
-                "email": row[4],
-                "website": row[5],
-                "logo": row[6],
-                "created_at": row[7],
-                "updated_at": row[8],
+                "centerCode": row[2],
+                "address": row[3],
+                "phone": row[4],
+                "email": row[5],
+                "website": row[6],
+                "logo": row[7],
+                "created_at": row[8],
+                "updated_at": row[9],
             }
         return None
 
@@ -103,11 +105,12 @@ class SettingsRepository:
                 # Insert new settings
                 cursor.execute(
                     """
-                    INSERT INTO institute_settings (name, address, phone, email, website, logo)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO institute_settings (name, center_code, address, phone, email, website, logo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         settings_data.get("name", ""),
+                        settings_data.get("centerCode", ""),
                         settings_data.get("address", ""),
                         settings_data.get("phone", ""),
                         settings_data.get("email", ""),
@@ -120,11 +123,12 @@ class SettingsRepository:
                 cursor.execute(
                     """
                     UPDATE institute_settings
-                    SET name = ?, address = ?, phone = ?, email = ?, website = ?, logo = ?
+                    SET name = ?, center_code = ?, address = ?, phone = ?, email = ?, website = ?, logo = ?
                     WHERE id = (SELECT id FROM institute_settings ORDER BY id DESC LIMIT 1)
                     """,
                     (
                         settings_data.get("name", ""),
+                        settings_data.get("centerCode", ""),
                         settings_data.get("address", ""),
                         settings_data.get("phone", ""),
                         settings_data.get("email", ""),
