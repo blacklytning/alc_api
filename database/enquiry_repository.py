@@ -1,7 +1,9 @@
-from typing import Any, Dict, List, Optional
 from datetime import date
-from .connection import get_db_connection
+from typing import Any, Dict, List, Optional
+
 from models import StudentEnquiry
+
+from .connection import get_db_connection
 
 
 class EnquiryRepository:
@@ -16,9 +18,10 @@ class EnquiryRepository:
                 """
                 INSERT INTO student_enquiries (
                     first_name, middle_name, last_name, date_of_birth, gender,
-                    marital_status, mother_tongue, aadhar_number, correspondence_address,
-                    city, state, district, mobile_number, alternate_mobile_number,
-                    category, educational_qualification, course_name, timing, handled_by
+                    marital_status, mother_tongue, aadhar_number,
+                    correspondence_address, city, state, district,
+                    mobile_number, alternate_mobile_number, category,
+                    educational_qualification, course_name, timing, handled_by
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
@@ -45,7 +48,7 @@ class EnquiryRepository:
             )
 
             enquiry_id = cursor.lastrowid
-            
+
             # Create a pending followup automatically
             cursor.execute(
                 """
@@ -62,7 +65,7 @@ class EnquiryRepository:
                     enquiry.handledBy or "System User",
                 ),
             )
-            
+
             conn.commit()
             return enquiry_id
         except Exception as e:

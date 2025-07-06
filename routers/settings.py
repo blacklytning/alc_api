@@ -34,8 +34,7 @@ def get_institute_settings() -> Dict[str, Any]:
             }
         return settings
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @router.post("/settings/institute")
@@ -51,8 +50,7 @@ def update_institute_settings(
     try:
         # Validate required fields
         if not name.strip():
-            raise HTTPException(
-                status_code=400, detail="Institute name is required")
+            raise HTTPException(status_code=400, detail="Institute name is required")
 
         settings_data = {
             "name": name.strip(),
@@ -99,8 +97,7 @@ def update_institute_settings(
         success = SettingsRepository.update_institute_settings(settings_data)
 
         if not success:
-            raise HTTPException(
-                status_code=500, detail="Failed to update settings")
+            raise HTTPException(status_code=500, detail="Failed to update settings")
 
         return {
             "message": "Institute settings updated successfully",
@@ -133,8 +130,7 @@ def create_database_backup():
     try:
         backup_path = SettingsRepository.create_backup()
         if not backup_path:
-            raise HTTPException(
-                status_code=500, detail="Failed to create backup")
+            raise HTTPException(status_code=500, detail="Failed to create backup")
 
         return FileResponse(
             path=backup_path,
@@ -145,8 +141,7 @@ def create_database_backup():
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error creating backup: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating backup: {str(e)}")
 
 
 @router.post("/settings/database/restore")
@@ -162,8 +157,7 @@ def restore_database_backup(backup_file: UploadFile = File(...)) -> Dict[str, An
         file_extension = os.path.splitext(backup_file.filename)[1].lower()
 
         if file_extension not in allowed_extensions:
-            raise HTTPException(
-                status_code=400, detail="Invalid backup file format")
+            raise HTTPException(status_code=400, detail="Invalid backup file format")
 
         # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(
@@ -177,8 +171,7 @@ def restore_database_backup(backup_file: UploadFile = File(...)) -> Dict[str, An
             success = SettingsRepository.restore_backup(tmp_file_path)
 
             if not success:
-                raise HTTPException(
-                    status_code=500, detail="Failed to restore backup")
+                raise HTTPException(status_code=500, detail="Failed to restore backup")
 
             return {"message": "Database restored successfully", "status": "success"}
 
@@ -190,5 +183,4 @@ def restore_database_backup(backup_file: UploadFile = File(...)) -> Dict[str, An
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error restoring backup: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error restoring backup: {str(e)}")

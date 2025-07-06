@@ -1,7 +1,9 @@
+from typing import Any, Dict
+
 from fastapi import APIRouter, HTTPException
-from typing import Dict, Any
-from models import StudentEnquiry
+
 from database.enquiry_repository import EnquiryRepository
+from models import StudentEnquiry
 
 router = APIRouter(prefix="/api", tags=["enquiries"])
 
@@ -17,10 +19,9 @@ def create_enquiry(enquiry: StudentEnquiry) -> Dict[str, Any]:
             "status": "success",
         }
     except Exception as e:
-        # Return success message even on error (as per original code)
         return {
-            "message": "Enquiry submitted successfully",
-            "status": "success",
+            "message": "Enquiry failed to be submitted. Reason: " + str(e),
+            "status": "failed",
         }
 
 
@@ -31,7 +32,8 @@ def get_all_enquiries() -> Dict[str, Any]:
         enquiries = EnquiryRepository.get_all()
         return {"enquiries": enquiries, "total": len(enquiries)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(e)}")
 
 
 @router.get("/enquiry/{enquiry_id}")
@@ -45,4 +47,5 @@ def get_enquiry(enquiry_id: int) -> Dict[str, Any]:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(e)}")

@@ -149,7 +149,8 @@ class SettingsRepository:
 
             # Get database file size
             db_file = "student_data.db"
-            db_size = os.path.getsize(db_file) if os.path.exists(db_file) else 0
+            db_size = os.path.getsize(
+                db_file) if os.path.exists(db_file) else 0
 
             # Count total records
             total_records = 0
@@ -182,7 +183,8 @@ class SettingsRepository:
                     if f.endswith(".sql") or f.endswith(".db")
                 ]
                 backup_files.sort(
-                    key=lambda x: os.path.getmtime(os.path.join(backup_dir, x)),
+                    key=lambda x: os.path.getmtime(
+                        os.path.join(backup_dir, x)),
                     reverse=True,
                 )
 

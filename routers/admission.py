@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException, Form, File, UploadFile
-from typing import Dict, Any
+from typing import Any, Dict
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+
 from database.admission_repository import AdmissionRepository
 from file_handler import FileHandler
 
@@ -76,7 +78,9 @@ async def create_admission(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating admission: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error creating admission: {str(e)}"
+        )
 
 
 @router.get("/admissions")

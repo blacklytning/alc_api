@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 from typing import Tuple
+
 from fastapi import UploadFile
 
 UPLOAD_FOLDER = "uploads"
@@ -15,11 +16,13 @@ class FileHandler:
     ) -> Tuple[str, str]:
         """Save uploaded photo and signature files"""
         timestamp = str(int(time.time()))
-        
+
         # Generate unique filenames
-        photo_filename = f"{mobile_number}_{timestamp}_photo.{photo.filename.split('.')[-1]}"
-        signature_filename = f"{mobile_number}_{timestamp}_signature.{signature.filename.split('.')[-1]}"
-        
+        photo_filename = f"{mobile_number}_{
+            timestamp}_photo.{photo.filename.split('.')[-1]}"
+        signature_filename = f"{mobile_number}_{
+            timestamp}_signature.{signature.filename.split('.')[-1]}"
+
         photo_path = os.path.join(UPLOAD_FOLDER, photo_filename)
         signature_path = os.path.join(UPLOAD_FOLDER, signature_filename)
 

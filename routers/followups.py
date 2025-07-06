@@ -1,6 +1,6 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 
 from database.enquiry_repository import EnquiryRepository
 from database.followup_repository import FollowupRepository
@@ -137,6 +137,3 @@ def delete_followup(followup_id: int) -> Dict[str, Any]:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-
-
-

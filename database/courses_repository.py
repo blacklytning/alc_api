@@ -1,6 +1,8 @@
 import sqlite3
 from typing import Any, Dict, List, Optional
+
 from models import Course, CourseUpdate
+
 from .connection import get_db_connection
 
 
@@ -164,5 +166,3 @@ class CourseRepository:
             )
 
         return courses
-
-
