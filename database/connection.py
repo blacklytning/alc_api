@@ -73,6 +73,8 @@ def init_database():
     conn.commit()
     conn.close()
 
+    set_admission_id_start()
+
 
 def get_db_connection():
     """Get database connection"""
@@ -269,4 +271,18 @@ def init_settings_table():
         )
 
     conn.commit()
+    conn.close()
+
+
+def set_admission_id_start(start=10001):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Only set if table exists and uses AUTOINCREMENT
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='student_admissions'")
+    if cursor.fetchone():
+        cursor.execute("SELECT seq FROM sqlite_sequence WHERE name='student_admissions'")
+        row = cursor.fetchone()
+        if not row or row[0] < start - 1:
+            cursor.execute("UPDATE sqlite_sequence SET seq = ? WHERE name = 'student_admissions'", (start - 1,))
+            conn.commit()
     conn.close()
