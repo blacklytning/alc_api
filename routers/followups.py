@@ -139,40 +139,4 @@ def delete_followup(followup_id: int) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@router.get("/followups/search")
-def search_followups(
-    status: Optional[str] = Query(None, description="Filter by status"),
-    handled_by: Optional[str] = Query(None, description="Filter by handler"),
-    overdue_only: Optional[bool] = Query(
-        False, description="Show only overdue follow-ups"
-    ),
-) -> Dict[str, Any]:
-    """Search and filter follow-ups"""
-    try:
-        if overdue_only:
-            followups = FollowupRepository.get_overdue_followups()
-            return {
-                "followups": followups,
-                "total": len(followups),
-                "filters_applied": {"overdue_only": True},
-            }
 
-        # For now, return all enquiries with followup summary
-        # You can extend this to add more specific filtering
-        enquiries = FollowupRepository.get_enquiries_with_followup_summary()
-
-        # Apply status filter if provided
-        if status and status != "ALL":
-            enquiries = [e for e in enquiries if e["currentStatus"] == status]
-
-        return {
-            "enquiries": enquiries,
-            "total": len(enquiries),
-            "filters_applied": {
-                "status": status,
-                "handled_by": handled_by,
-                "overdue_only": overdue_only,
-            },
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
