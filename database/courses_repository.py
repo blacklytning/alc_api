@@ -165,49 +165,4 @@ class CourseRepository:
 
         return courses
 
-    @staticmethod
-    def get_course_stats() -> Dict[str, Any]:
-        """Get course statistics"""
-        conn = get_db_connection()
-        cursor = conn.cursor()
 
-        # Total courses
-        cursor.execute("SELECT COUNT(*) FROM courses")
-        total_courses = cursor.fetchone()[0]
-
-        # Average fees
-        cursor.execute("SELECT AVG(fees) FROM courses")
-        avg_fees = cursor.fetchone()[0] or 0
-
-        # Min and max fees
-        cursor.execute("SELECT MIN(fees), MAX(fees) FROM courses")
-        min_fees, max_fees = cursor.fetchone()
-
-        # Most expensive course
-        cursor.execute(
-            "SELECT course_name, fees FROM courses WHERE fees = (SELECT MAX(fees) FROM courses) LIMIT 1"
-        )
-        most_expensive = cursor.fetchone()
-
-        # Least expensive course
-        cursor.execute(
-            "SELECT course_name, fees FROM courses WHERE fees = (SELECT MIN(fees) FROM courses) LIMIT 1"
-        )
-        least_expensive = cursor.fetchone()
-
-        conn.close()
-
-        return {
-            "total_courses": total_courses,
-            "average_fees": round(avg_fees, 2),
-            "min_fees": min_fees or 0,
-            "max_fees": max_fees or 0,
-            "most_expensive": {
-                "course_name": most_expensive[0] if most_expensive else None,
-                "fees": most_expensive[1] if most_expensive else None,
-            },
-            "least_expensive": {
-                "course_name": least_expensive[0] if least_expensive else None,
-                "fees": least_expensive[1] if least_expensive else None,
-            },
-        }
