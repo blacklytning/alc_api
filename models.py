@@ -142,3 +142,14 @@ class DatabaseStatsResponse(BaseModel):
     databaseSize: int
     totalRecords: int
     backupHistory: list
+
+
+class PaymentCreate(BaseModel):
+    student_id: int = Field(..., description="ID of the student")
+    amount: float = Field(..., description="Payment amount")
+    payment_date: str = Field(..., description="Payment date (YYYY-MM-DD)")
+    payment_method: str = Field(..., description="Payment method (CASH, CARD, UPI, BANK_TRANSFER, CHEQUE)")
+    transaction_id: Optional[str] = Field(None, description="Transaction ID for non-cash payments")
+    notes: Optional[str] = Field(None, description="Payment notes")
+    late_fee: Optional[float] = Field(0, description="Late fee amount")
+    handled_by: Optional[str] = Field("System User", description="Staff member who handled the payment")

@@ -183,6 +183,46 @@ def init_followups_table():
     conn.close()
 
 
+def init_fee_payments_table():
+    """Initialize the fee_payments table"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS fee_payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER NOT NULL,
+            amount REAL NOT NULL CHECK(amount > 0),
+            payment_date TEXT NOT NULL,
+            payment_method TEXT NOT NULL CHECK(payment_method IN ('CASH', 'CARD', 'UPI', 'BANK_TRANSFER', 'CHEQUE')),
+            transaction_id TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            late_fee REAL DEFAULT 0,
+            handled_by TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (student_id) REFERENCES student_admissions (id) ON DELETE CASCADE
+        )
+        """
+    )
+
+    # Create index for better query performance
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_fee_payments_student_id ON fee_payments(student_id);
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_fee_payments_date ON fee_payments(payment_date);
+        """
+    )
+
+    conn.commit()
+    conn.close()
+
+
 def init_settings_table():
     """Initialize the institute settings table"""
     conn = get_db_connection()

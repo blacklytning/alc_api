@@ -6,11 +6,12 @@ from fastapi.staticfiles import StaticFiles
 
 # Import database initialization
 from database.connection import (init_courses_table, init_database,
-                                 init_followups_table, init_settings_table)
+                                 init_followups_table, init_fee_payments_table, init_settings_table)
 from routers.admission import router as admission_router
 from routers.courses import router as course_router
 # Import routers
 from routers.enquiry import router as enquiry_router
+from routers.fees import router as fees_router
 from routers.files import router as files_router
 from routers.followups import router as followups_router
 from routers.settings import router as settings_router
@@ -41,6 +42,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_FOLDER), name="uploads")
 app.include_router(enquiry_router)
 app.include_router(admission_router)
 app.include_router(course_router)
+app.include_router(fees_router)
 app.include_router(files_router)
 app.include_router(stats_router)
 app.include_router(followups_router)
@@ -54,6 +56,7 @@ async def startup_event():
     init_database()
     init_courses_table()
     init_followups_table()
+    init_fee_payments_table()
     init_settings_table()
 
 
@@ -66,6 +69,7 @@ def read_root():
             "enquiries": "/api/enquiries",
             "admissions": "/api/admissions",
             "courses": "/api/courses",
+            "fees": "/api/fees",
             "followups": "/api/followups",
             "settings": "/api/settings",
             "stats": "/api/stats",
