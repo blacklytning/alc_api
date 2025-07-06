@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional
+from datetime import date
 from .connection import get_db_connection
 from models import StudentEnquiry
 
@@ -10,42 +11,65 @@ class EnquiryRepository:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute(
-            """
-            INSERT INTO student_enquiries (
-                first_name, middle_name, last_name, date_of_birth, gender,
-                marital_status, mother_tongue, aadhar_number, correspondence_address,
-                city, state, district, mobile_number, alternate_mobile_number,
-                category, educational_qualification, course_name, timing, handled_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                enquiry.firstName,
-                enquiry.middleName,
-                enquiry.lastName,
-                enquiry.dateOfBirth,
-                enquiry.gender,
-                enquiry.maritalStatus,
-                enquiry.motherTongue,
-                enquiry.aadharNumber,
-                enquiry.correspondenceAddress,
-                enquiry.city,
-                enquiry.state,
-                enquiry.district,
-                enquiry.mobileNumber,
-                enquiry.alternateMobileNumber,
-                enquiry.category,
-                enquiry.educationalQualification,
-                enquiry.courseName,
-                enquiry.timing,
-                enquiry.handledBy,
-            ),
-        )
+        try:
+            cursor.execute(
+                """
+                INSERT INTO student_enquiries (
+                    first_name, middle_name, last_name, date_of_birth, gender,
+                    marital_status, mother_tongue, aadhar_number, correspondence_address,
+                    city, state, district, mobile_number, alternate_mobile_number,
+                    category, educational_qualification, course_name, timing, handled_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    enquiry.firstName,
+                    enquiry.middleName,
+                    enquiry.lastName,
+                    enquiry.dateOfBirth,
+                    enquiry.gender,
+                    enquiry.maritalStatus,
+                    enquiry.motherTongue,
+                    enquiry.aadharNumber,
+                    enquiry.correspondenceAddress,
+                    enquiry.city,
+                    enquiry.state,
+                    enquiry.district,
+                    enquiry.mobileNumber,
+                    enquiry.alternateMobileNumber,
+                    enquiry.category,
+                    enquiry.educationalQualification,
+                    enquiry.courseName,
+                    enquiry.timing,
+                    enquiry.handledBy,
+                ),
+            )
 
-        enquiry_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        return enquiry_id
+            enquiry_id = cursor.lastrowid
+            
+            # Create a pending followup automatically
+            cursor.execute(
+                """
+                INSERT INTO followups (
+                    enquiry_id, followup_date, status, notes, next_followup_date, handled_by
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    enquiry_id,
+                    date.today().isoformat(),
+                    "PENDING",
+                    "Initial enquiry followup",
+                    None,  # No next followup date initially
+                    enquiry.handledBy or "System User",
+                ),
+            )
+            
+            conn.commit()
+            return enquiry_id
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            conn.close()
 
     @staticmethod
     def get_all() -> List[Dict[str, Any]]:
