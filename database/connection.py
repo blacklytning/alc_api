@@ -293,3 +293,31 @@ def set_admission_id_start(start=10001):
             cursor.execute("UPDATE sqlite_sequence SET seq = ? WHERE name = 'student_admissions'", (start - 1,))
             conn.commit()
     conn.close()
+
+
+def init_attendance_table():
+    """Initialize the attendance table"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            batch_timing TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('PRESENT', 'ABSENT')),
+            marked_by TEXT DEFAULT 'System User',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(student_id, date),
+            FOREIGN KEY (student_id) REFERENCES student_admissions (id) ON DELETE CASCADE
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_attendance_date_batch ON attendance(date, batch_timing)
+        """
+    )
+    conn.commit()
+    conn.close()
