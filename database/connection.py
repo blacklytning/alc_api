@@ -201,12 +201,19 @@ def init_fee_payments_table():
             transaction_id TEXT DEFAULT '',
             notes TEXT DEFAULT '',
             late_fee REAL DEFAULT 0,
+            discount REAL DEFAULT 0,
             handled_by TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (student_id) REFERENCES student_admissions (id) ON DELETE CASCADE
         )
         """
     )
+
+    # Add discount column if it does not exist (migration for existing DBs)
+    try:
+        cursor.execute("ALTER TABLE fee_payments ADD COLUMN discount REAL DEFAULT 0")
+    except Exception:
+        pass  # Ignore if already exists
 
     # Create index for better query performance
     cursor.execute(

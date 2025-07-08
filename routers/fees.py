@@ -18,6 +18,7 @@ def create_payment(payment: PaymentCreate) -> Dict[str, Any]:
             "transaction_id": payment.transaction_id or "",
             "notes": payment.notes or "",
             "late_fee": payment.late_fee or 0,
+            "discount": payment.discount or 0,
             "handled_by": payment.handled_by or "System User",
         }
 

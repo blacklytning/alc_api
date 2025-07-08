@@ -16,8 +16,8 @@ class FeesRepository:
                 """
                 INSERT INTO fee_payments (
                     student_id, amount, payment_date, payment_method,
-                    transaction_id, notes, late_fee, handled_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    transaction_id, notes, late_fee, discount, handled_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     payment_data["student_id"],
@@ -27,6 +27,7 @@ class FeesRepository:
                     payment_data.get("transaction_id", ""),
                     payment_data.get("notes", ""),
                     payment_data.get("late_fee", 0),
+                    payment_data.get("discount", 0),
                     payment_data.get("handled_by", "System User"),
                 ),
             )
@@ -51,7 +52,7 @@ class FeesRepository:
             SELECT 
                 fp.id, fp.student_id, fp.amount, fp.payment_date,
                 fp.payment_method, fp.transaction_id, fp.notes,
-                fp.late_fee, fp.handled_by, fp.created_at,
+                fp.late_fee, fp.discount, fp.handled_by, fp.created_at,
                 sa.first_name, sa.middle_name, sa.last_name,
                 sa.mobile_number, sa.course_name
             FROM fee_payments fp
@@ -74,11 +75,12 @@ class FeesRepository:
                 "transaction_id": row[5],
                 "notes": row[6],
                 "late_fee": row[7],
-                "handled_by": row[8],
-                "created_at": row[9],
-                "student_name": f"{row[10]} {row[11] or ''} {row[12]}".strip(),
-                "mobile_number": row[13],
-                "course_name": row[14],
+                "discount": row[8],
+                "handled_by": row[9],
+                "created_at": row[10],
+                "student_name": f"{row[11]} {row[12] or ''} {row[13]}".strip(),
+                "mobile_number": row[14],
+                "course_name": row[15],
             })
 
         return payments
@@ -93,7 +95,7 @@ class FeesRepository:
             """
             SELECT 
                 id, student_id, amount, payment_date, payment_method,
-                transaction_id, notes, late_fee, handled_by, created_at
+                transaction_id, notes, late_fee, discount, handled_by, created_at
             FROM fee_payments
             WHERE student_id = ?
             ORDER BY payment_date DESC
@@ -115,8 +117,9 @@ class FeesRepository:
                 "transaction_id": row[5],
                 "notes": row[6],
                 "late_fee": row[7],
-                "handled_by": row[8],
-                "created_at": row[9],
+                "discount": row[8],
+                "handled_by": row[9],
+                "created_at": row[10],
             })
 
         return payments
@@ -149,20 +152,22 @@ class FeesRepository:
             # Calculate total due (course fee)
             course_fee = student[7] or 2000  # Default fee if not found
             
-            # Get total paid
+            # Get total paid and total discount
             cursor.execute(
-                "SELECT COALESCE(SUM(amount), 0) FROM fee_payments WHERE student_id = ?",
+                "SELECT COALESCE(SUM(amount), 0), COALESCE(SUM(discount), 0) FROM fee_payments WHERE student_id = ?",
                 (student_id,)
             )
-            total_paid = cursor.fetchone()[0] or 0
+            total_paid, total_discount = cursor.fetchone()
+            total_paid = total_paid or 0
+            total_discount = total_discount or 0
             
             # Calculate balance
-            balance = course_fee - total_paid
+            balance = course_fee - total_paid - total_discount
             
             # Determine status
             if balance <= 0:
                 status = "PAID"
-            elif total_paid > 0:
+            elif total_paid > 0 or total_discount > 0:
                 status = "PARTIAL"
             else:
                 status = "PENDING"
@@ -183,6 +188,7 @@ class FeesRepository:
                 "admission_date": student[6],
                 "course_fee": course_fee,
                 "total_paid": total_paid,
+                "total_discount": total_discount,
                 "balance": balance,
                 "status": status,
                 "is_overdue": status == "OVERDUE",
@@ -217,19 +223,21 @@ class FeesRepository:
             conn.close()
             return None
 
-        # Get total paid
+        # Get total paid and total discount
         cursor.execute(
-            "SELECT COALESCE(SUM(amount), 0) FROM fee_payments WHERE student_id = ?",
+            "SELECT COALESCE(SUM(amount), 0), COALESCE(SUM(discount), 0) FROM fee_payments WHERE student_id = ?",
             (student_id,)
         )
-        total_paid = cursor.fetchone()[0] or 0
+        total_paid, total_discount = cursor.fetchone()
+        total_paid = total_paid or 0
+        total_discount = total_discount or 0
 
         # Get payment history
         cursor.execute(
             """
             SELECT 
                 id, amount, payment_date, payment_method, transaction_id,
-                notes, late_fee, handled_by, created_at
+                notes, late_fee, discount, handled_by, created_at
             FROM fee_payments
             WHERE student_id = ?
             ORDER BY payment_date DESC
@@ -247,12 +255,13 @@ class FeesRepository:
                 "transaction_id": row[4],
                 "notes": row[5],
                 "late_fee": row[6],
-                "handled_by": row[7],
-                "created_at": row[8],
+                "discount": row[7],
+                "handled_by": row[8],
+                "created_at": row[9],
             })
 
         course_fee = student[7] or 2000
-        balance = course_fee - total_paid
+        balance = course_fee - total_paid - total_discount
 
         conn.close()
 
@@ -264,6 +273,7 @@ class FeesRepository:
             "admission_date": student[6],
             "course_fee": course_fee,
             "total_paid": total_paid,
+            "total_discount": total_discount,
             "balance": balance,
             "payments": payments,
         } 

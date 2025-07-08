@@ -152,4 +152,5 @@ class PaymentCreate(BaseModel):
     transaction_id: Optional[str] = Field(None, description="Transaction ID for non-cash payments")
     notes: Optional[str] = Field(None, description="Payment notes")
     late_fee: Optional[float] = Field(0, description="Late fee amount")
+    discount: Optional[float] = Field(0, description="Discount amount")
     handled_by: Optional[str] = Field("System User", description="Staff member who handled the payment")
