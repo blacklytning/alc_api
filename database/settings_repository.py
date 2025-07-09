@@ -138,7 +138,7 @@ class SettingsRepository:
                 backup_files = [
                     f
                     for f in os.listdir(backup_dir)
-                    if f.endswith(".sql") or f.endswith(".db")
+                    if f.endswith(".zip")
                 ]
                 backup_files.sort(
                     key=lambda x: os.path.getmtime(
