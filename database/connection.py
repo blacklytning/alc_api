@@ -242,6 +242,7 @@ def init_settings_table():
         CREATE TABLE IF NOT EXISTS institute_settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
+            center_code TEXT DEFAULT '',
             address TEXT DEFAULT '',
             phone TEXT DEFAULT '',
             email TEXT DEFAULT '',

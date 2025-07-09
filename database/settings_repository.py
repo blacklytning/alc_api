@@ -2,60 +2,15 @@ import os
 import sqlite3
 from datetime import datetime
 from typing import Any, Dict, Optional
+import zipfile
+import shutil
+import tempfile
 
 from .connection import get_db_connection
 
 
 class SettingsRepository:
-    @staticmethod
-    def init_settings_table():
-        """Initialize the settings table"""
-        conn = get_db_connection()
-        cursor = conn.cursor()
 
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS institute_settings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                center_code TEXT DEFAULT '',
-                address TEXT DEFAULT '',
-                phone TEXT DEFAULT '',
-                email TEXT DEFAULT '',
-                website TEXT DEFAULT '',
-                logo TEXT DEFAULT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-
-        # Create trigger to update updated_at timestamp
-        cursor.execute(
-            """
-            CREATE TRIGGER IF NOT EXISTS update_institute_settings_timestamp
-            AFTER UPDATE ON institute_settings
-            BEGIN
-                UPDATE institute_settings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-            END;
-            """
-        )
-
-        # Insert default settings if table is empty
-        cursor.execute("SELECT COUNT(*) FROM institute_settings")
-        count = cursor.fetchone()[0]
-
-        if count == 0:
-            cursor.execute(
-                """
-                INSERT INTO institute_settings (name, center_code, address, phone, email, website)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                ("Your Institute Name", "", "", "", "", ""),
-            )
-
-        conn.commit()
-        conn.close()
 
     @staticmethod
     def get_institute_settings() -> Optional[Dict[str, Any]]:
@@ -232,7 +187,7 @@ class SettingsRepository:
 
     @staticmethod
     def create_backup() -> Optional[str]:
-        """Create database backup"""
+        """Create database and uploads backup as a zip file"""
         try:
             backup_dir = "backups"
             os.makedirs(backup_dir, exist_ok=True)
@@ -243,20 +198,35 @@ class SettingsRepository:
 
             # Create SQL dump
             conn = get_db_connection()
-
             with open(backup_path, "w") as f:
                 for line in conn.iterdump():
                     f.write("%s\n" % line)
-
             conn.close()
-            return backup_path
+
+            # Create zip containing SQL and uploads
+            zip_filename = f"edumanage_backup_{timestamp}.zip"
+            zip_path = os.path.join(backup_dir, zip_filename)
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                # Add SQL dump
+                zipf.write(backup_path, arcname=os.path.basename(backup_path))
+                # Add uploads folder
+                uploads_dir = "uploads"
+                if os.path.exists(uploads_dir):
+                    for root, dirs, files in os.walk(uploads_dir):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, uploads_dir)
+                            zipf.write(file_path, arcname=os.path.join("uploads", arcname))
+            # Optionally remove the raw SQL file after zipping
+            os.remove(backup_path)
+            return zip_path
         except Exception as e:
             print(f"Error creating backup: {e}")
             return None
 
     @staticmethod
     def restore_backup(backup_file_path: str) -> bool:
-        """Delete DB file and restore from SQL dump"""
+        """Restore from a backup file (zip containing SQL and uploads, or plain SQL)."""
         try:
             # 1. Backup current DB before replacing
             current_backup = SettingsRepository.create_backup()
@@ -264,20 +234,61 @@ class SettingsRepository:
                 print("Failed to create backup before restore")
                 return False
 
+            import shutil
+            import tempfile
+            import zipfile
+            import os
+            import sqlite3
+
             db_path = "student_data.db"
-            if os.path.exists(db_path):
-                os.remove(db_path)  # delete the old DB
+            uploads_dir = "uploads"
 
-            # 2. Create a fresh DB and restore
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
+            # Helper: restore DB from SQL file
+            def restore_db_from_sql(sql_path):
+                if os.path.exists(db_path):
+                    os.remove(db_path)
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                with open(sql_path, "r", encoding="utf-8") as f:
+                    sql_script = f.read()
+                cursor.executescript(sql_script)
+                conn.commit()
+                conn.close()
 
-            with open(backup_file_path, "r") as f:
-                sql_script = f.read()
+            # Helper: restore uploads folder
+            def restore_uploads_from_dir(src_uploads):
+                if os.path.exists(uploads_dir):
+                    shutil.rmtree(uploads_dir)
+                shutil.copytree(src_uploads, uploads_dir)
 
-            cursor.executescript(sql_script)
-            conn.commit()
-            conn.close()
+            # Check if file is a zip (by magic number, not just extension)
+            is_zip = False
+            with open(backup_file_path, 'rb') as f:
+                sig = f.read(4)
+                if sig == b'PK\x03\x04':
+                    is_zip = True
+
+            if is_zip:
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    with zipfile.ZipFile(backup_file_path, 'r') as zipf:
+                        zipf.extractall(tmpdir)
+                    # Find SQL file (should be only .sql in root of tmpdir)
+                    sql_file = None
+                    for fname in os.listdir(tmpdir):
+                        if fname.endswith('.sql'):
+                            sql_file = os.path.join(tmpdir, fname)
+                            break
+                    if not sql_file:
+                        print("No SQL file found in backup zip!")
+                        return False
+                    restore_db_from_sql(sql_file)
+                    # Restore uploads if present
+                    extracted_uploads = os.path.join(tmpdir, 'uploads')
+                    if os.path.exists(extracted_uploads):
+                        restore_uploads_from_dir(extracted_uploads)
+            else:
+                # Not a zip, treat as plain SQL
+                restore_db_from_sql(backup_file_path)
             return True
         except Exception as e:
             print(f"Error restoring backup: {e}")
