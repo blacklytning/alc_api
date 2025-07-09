@@ -11,7 +11,6 @@ from .connection import get_db_connection
 
 class SettingsRepository:
 
-
     @staticmethod
     def get_institute_settings() -> Optional[Dict[str, Any]]:
         """Get institute settings"""
@@ -226,69 +225,53 @@ class SettingsRepository:
 
     @staticmethod
     def restore_backup(backup_file_path: str) -> bool:
-        """Restore from a backup file (zip containing SQL and uploads, or plain SQL)."""
+        """Restore from a backup zip file (containing SQL and uploads). Only zip files are supported."""
         try:
+
+            db_path = "student_data.db"
+            uploads_dir = "uploads"
+
+            # Check if file is a zip (by magic number, not just extension)
+            with open(backup_file_path, 'rb') as f:
+                sig = f.read(4)
+                if sig != b'PK\x03\x04':
+                    print("Restore failed: Only zip backup files are supported.")
+                    return False
+
             # 1. Backup current DB before replacing
             current_backup = SettingsRepository.create_backup()
             if not current_backup:
                 print("Failed to create backup before restore")
                 return False
 
-            import shutil
-            import tempfile
-            import zipfile
-            import os
-            import sqlite3
-
-            db_path = "student_data.db"
-            uploads_dir = "uploads"
-
-            # Helper: restore DB from SQL file
-            def restore_db_from_sql(sql_path):
+            with tempfile.TemporaryDirectory() as tmpdir:
+                with zipfile.ZipFile(backup_file_path, 'r') as zipf:
+                    zipf.extractall(tmpdir)
+                # Find SQL file (should be only .sql in root of tmpdir)
+                sql_file = None
+                for fname in os.listdir(tmpdir):
+                    if fname.endswith('.sql'):
+                        sql_file = os.path.join(tmpdir, fname)
+                        break
+                if not sql_file:
+                    print("No SQL file found in backup zip!")
+                    return False
+                # Restore DB from SQL file
                 if os.path.exists(db_path):
                     os.remove(db_path)
                 conn = sqlite3.connect(db_path)
                 cursor = conn.cursor()
-                with open(sql_path, "r", encoding="utf-8") as f:
+                with open(sql_file, "r", encoding="utf-8") as f:
                     sql_script = f.read()
                 cursor.executescript(sql_script)
                 conn.commit()
                 conn.close()
-
-            # Helper: restore uploads folder
-            def restore_uploads_from_dir(src_uploads):
-                if os.path.exists(uploads_dir):
-                    shutil.rmtree(uploads_dir)
-                shutil.copytree(src_uploads, uploads_dir)
-
-            # Check if file is a zip (by magic number, not just extension)
-            is_zip = False
-            with open(backup_file_path, 'rb') as f:
-                sig = f.read(4)
-                if sig == b'PK\x03\x04':
-                    is_zip = True
-
-            if is_zip:
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    with zipfile.ZipFile(backup_file_path, 'r') as zipf:
-                        zipf.extractall(tmpdir)
-                    # Find SQL file (should be only .sql in root of tmpdir)
-                    sql_file = None
-                    for fname in os.listdir(tmpdir):
-                        if fname.endswith('.sql'):
-                            sql_file = os.path.join(tmpdir, fname)
-                            break
-                    if not sql_file:
-                        print("No SQL file found in backup zip!")
-                        return False
-                    restore_db_from_sql(sql_file)
-                    # Restore uploads if present
-                    extracted_uploads = os.path.join(tmpdir, 'uploads')
-                    if os.path.exists(extracted_uploads):
-                        restore_uploads_from_dir(extracted_uploads)
-            else:
-                # Not a zip, treat as plain SQL
-                restore_db_from_sql(backup_file_path)
+                # Restore uploads if present
+                extracted_uploads = os.path.join(tmpdir, 'uploads')
+                if os.path.exists(extracted_uploads):
+                    if os.path.exists(uploads_dir):
+                        shutil.rmtree(uploads_dir)
+                    shutil.copytree(extracted_uploads, uploads_dir)
             return True
         except Exception as e:
             print(f"Error restoring backup: {e}")
