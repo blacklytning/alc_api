@@ -162,3 +162,70 @@ class AdmissionRepository:
             "signatureFilename": row[22],
             "createdAt": row[23],
         }
+
+    @staticmethod
+    def update(admission_id: int, admission_data: Dict[str, Any]) -> bool:
+        """Update an existing admission"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if admission exists
+        cursor.execute("SELECT id FROM student_admissions WHERE id = ?", (admission_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return False
+
+        # Update admission data
+        cursor.execute(
+            """
+            UPDATE student_admissions SET
+                first_name = ?, middle_name = ?, last_name = ?, date_of_birth = ?,
+                gender = ?, marital_status = ?, mother_tongue = ?, aadhar_number = ?,
+                correspondence_address = ?, city = ?, state = ?, district = ?,
+                mobile_number = ?, alternate_mobile_number = ?, category = ?,
+                educational_qualification = ?, course_name = ?, timing = ?,
+                certificate_name = ?, referred_by = ?
+            WHERE id = ?
+            """,
+            (
+                admission_data["firstName"],
+                admission_data["middleName"],
+                admission_data["lastName"],
+                admission_data["dateOfBirth"],
+                admission_data["gender"],
+                admission_data["maritalStatus"],
+                admission_data["motherTongue"],
+                admission_data["aadharNumber"],
+                admission_data["correspondenceAddress"],
+                admission_data["city"],
+                admission_data["state"],
+                admission_data["district"],
+                admission_data["mobileNumber"],
+                admission_data["alternateMobileNumber"],
+                admission_data["category"],
+                admission_data["educationalQualification"],
+                admission_data["courseName"],
+                admission_data["timing"],
+                admission_data["certificateName"],
+                admission_data["referredBy"],
+                admission_id,
+            ),
+        )
+
+        # Update photo filename if provided
+        if "photoFilename" in admission_data and admission_data["photoFilename"]:
+            cursor.execute(
+                "UPDATE student_admissions SET photo_filename = ? WHERE id = ?",
+                (admission_data["photoFilename"], admission_id)
+            )
+
+        # Update signature filename if provided
+        if "signatureFilename" in admission_data and admission_data["signatureFilename"]:
+            cursor.execute(
+                "UPDATE student_admissions SET signature_filename = ? WHERE id = ?",
+                (admission_data["signatureFilename"], admission_id)
+            )
+
+        conn.commit()
+        conn.close()
+        return True
