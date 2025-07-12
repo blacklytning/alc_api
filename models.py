@@ -154,3 +154,36 @@ class PaymentCreate(BaseModel):
     late_fee: Optional[float] = Field(0, description="Late fee amount")
     discount: Optional[float] = Field(0, description="Discount amount")
     handled_by: Optional[str] = Field("System User", description="Staff member who handled the payment")
+
+
+class DocumentUpload(BaseModel):
+    student_id: int = Field(..., description="ID of the student")
+    document_type: str = Field(..., description="Type of document (SIGNED_ADMISSION_FORM, IDENTITY_PROOF, ADDRESS_PROOF, EDUCATIONAL_CERTIFICATE, OTHER)")
+    notes: Optional[str] = Field("", description="Document notes")
+
+
+class DocumentResponse(BaseModel):
+    id: int
+    student_id: int
+    document_type: str
+    filename: str
+    original_filename: str
+    file_size: int
+    mime_type: str
+    status: str
+    notes: str
+    created_at: str
+    updated_at: Optional[str]
+    student_name: Optional[str] = None
+
+
+class DocumentStatusUpdate(BaseModel):
+    status: str = Field(..., description="Document status (UPLOADED, PENDING, REJECTED)")
+    notes: Optional[str] = Field("", description="Status update notes")
+
+
+class DocumentStats(BaseModel):
+    total_documents: int
+    documents_by_status: dict
+    documents_by_type: list
+    total_size: int

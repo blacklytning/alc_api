@@ -300,6 +300,7 @@ def init_attendance_table():
     """Initialize the attendance table"""
     conn = get_db_connection()
     cursor = conn.cursor()
+
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS attendance (
@@ -315,10 +316,73 @@ def init_attendance_table():
         )
         """
     )
+
     cursor.execute(
         """
         CREATE INDEX IF NOT EXISTS idx_attendance_date_batch ON attendance(date, batch_timing)
         """
     )
+
+    conn.commit()
+    conn.close()
+
+
+def init_documents_table():
+    """Initialize the student_documents table"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS student_documents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER NOT NULL,
+            document_type TEXT NOT NULL CHECK(document_type IN (
+                'SIGNED_ADMISSION_FORM', 'IDENTITY_PROOF', 'ADDRESS_PROOF', 
+                'EDUCATIONAL_CERTIFICATE', 'OTHER'
+            )),
+            filename TEXT NOT NULL,
+            original_filename TEXT NOT NULL,
+            file_size INTEGER NOT NULL,
+            mime_type TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'UPLOADED' CHECK(status IN ('UPLOADED', 'PENDING', 'REJECTED')),
+            notes TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (student_id) REFERENCES student_admissions (id) ON DELETE CASCADE
+        )
+        """
+    )
+
+    # Create trigger to update updated_at timestamp
+    cursor.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS update_documents_timestamp
+        AFTER UPDATE ON student_documents
+        BEGIN
+            UPDATE student_documents SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+        END;
+        """
+    )
+
+    # Create indexes for better query performance
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_documents_student_id ON student_documents(student_id);
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_documents_type ON student_documents(document_type);
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_documents_status ON student_documents(status);
+        """
+    )
+
     conn.commit()
     conn.close()
