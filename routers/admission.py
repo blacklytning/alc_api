@@ -1,9 +1,11 @@
 from typing import Any, Dict
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from pydantic import ValidationError
 
 from database.admission_repository import AdmissionRepository
 from file_handler import FileHandler
+from models import StudentAdmission
 
 router = APIRouter(prefix="/api", tags=["admissions"])
 
@@ -35,33 +37,57 @@ async def create_admission(
 ) -> Dict[str, Any]:
     """Create a new admission with file uploads"""
     try:
+        # Validate admission data using Pydantic model
+        admission_model = StudentAdmission(
+            firstName=firstName,
+            middleName=middleName,
+            lastName=lastName,
+            dateOfBirth=dateOfBirth,
+            gender=gender,
+            maritalStatus=maritalStatus,
+            motherTongue=motherTongue,
+            aadharNumber=aadharNumber,
+            correspondenceAddress=correspondenceAddress,
+            city=city,
+            state=state,
+            district=district,
+            mobileNumber=mobileNumber,
+            alternateMobileNumber=alternateMobileNumber,
+            category=category,
+            educationalQualification=educationalQualification,
+            courseName=courseName,
+            timing=timing,
+            certificateName=certificateName,
+            referredBy=referredBy,
+        )
+
         # Save uploaded files
         photo_filename, signature_filename = FileHandler.save_admission_files(
-            mobileNumber, photo, signature
+            admission_model.mobileNumber, photo, signature
         )
 
         # Prepare admission data
         admission_data = {
-            "firstName": firstName,
-            "middleName": middleName,
-            "lastName": lastName,
-            "dateOfBirth": dateOfBirth,
-            "gender": gender,
-            "maritalStatus": maritalStatus,
-            "motherTongue": motherTongue,
-            "aadharNumber": aadharNumber,
-            "correspondenceAddress": correspondenceAddress,
-            "city": city,
-            "state": state,
-            "district": district,
-            "mobileNumber": mobileNumber,
-            "alternateMobileNumber": alternateMobileNumber,
-            "category": category,
-            "educationalQualification": educationalQualification,
-            "courseName": courseName,
-            "timing": timing,
-            "certificateName": certificateName,
-            "referredBy": referredBy,
+            "firstName": admission_model.firstName,
+            "middleName": admission_model.middleName,
+            "lastName": admission_model.lastName,
+            "dateOfBirth": admission_model.dateOfBirth,
+            "gender": admission_model.gender,
+            "maritalStatus": admission_model.maritalStatus,
+            "motherTongue": admission_model.motherTongue,
+            "aadharNumber": admission_model.aadharNumber,
+            "correspondenceAddress": admission_model.correspondenceAddress,
+            "city": admission_model.city,
+            "state": admission_model.state,
+            "district": admission_model.district,
+            "mobileNumber": admission_model.mobileNumber,
+            "alternateMobileNumber": admission_model.alternateMobileNumber,
+            "category": admission_model.category,
+            "educationalQualification": admission_model.educationalQualification,
+            "courseName": admission_model.courseName,
+            "timing": admission_model.timing,
+            "certificateName": admission_model.certificateName,
+            "referredBy": admission_model.referredBy,
             "photoFilename": photo_filename,
             "signatureFilename": signature_filename,
         }
@@ -77,6 +103,10 @@ async def create_admission(
             "signature_filename": signature_filename,
         }
 
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=422, detail=f"Validation error: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error creating admission: {str(e)}"

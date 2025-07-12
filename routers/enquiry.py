@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
+from pydantic import ValidationError
 
 from database.enquiry_repository import EnquiryRepository
 from models import StudentEnquiry
@@ -18,6 +19,10 @@ def create_enquiry(enquiry: StudentEnquiry) -> Dict[str, Any]:
             "enquiry_id": enquiry_id,
             "status": "success",
         }
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=422, detail=f"Validation error: {str(e)}"
+        )
     except Exception as e:
         return {
             "message": "Enquiry failed to be submitted. Reason: " + str(e),

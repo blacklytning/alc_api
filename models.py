@@ -1,6 +1,7 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
+from validation import validate_mobile_number, validate_aadhar_number, format_mobile_number, format_aadhar_number
 
 
 class StudentEnquiry(BaseModel):
@@ -24,6 +25,29 @@ class StudentEnquiry(BaseModel):
     timing: str
     handledBy: str
 
+    @validator('mobileNumber')
+    def validate_mobile_number(cls, v):
+        is_valid, error_message = validate_mobile_number(v)
+        if not is_valid:
+            raise ValueError(error_message)
+        return format_mobile_number(v)
+
+    @validator('alternateMobileNumber')
+    def validate_alternate_mobile_number(cls, v):
+        if not v:  # Allow empty string
+            return v
+        is_valid, error_message = validate_mobile_number(v)
+        if not is_valid:
+            raise ValueError(error_message)
+        return format_mobile_number(v)
+
+    @validator('aadharNumber')
+    def validate_aadhar_number(cls, v):
+        is_valid, error_message = validate_aadhar_number(v)
+        if not is_valid:
+            raise ValueError(error_message)
+        return format_aadhar_number(v)
+
 
 class StudentAdmission(BaseModel):
     firstName: str
@@ -46,6 +70,29 @@ class StudentAdmission(BaseModel):
     timing: str
     certificateName: str
     referredBy: Optional[str] = ""
+
+    @validator('mobileNumber')
+    def validate_mobile_number(cls, v):
+        is_valid, error_message = validate_mobile_number(v)
+        if not is_valid:
+            raise ValueError(error_message)
+        return format_mobile_number(v)
+
+    @validator('alternateMobileNumber')
+    def validate_alternate_mobile_number(cls, v):
+        if not v:  # Allow empty string
+            return v
+        is_valid, error_message = validate_mobile_number(v)
+        if not is_valid:
+            raise ValueError(error_message)
+        return format_mobile_number(v)
+
+    @validator('aadharNumber')
+    def validate_aadhar_number(cls, v):
+        is_valid, error_message = validate_aadhar_number(v)
+        if not is_valid:
+            raise ValueError(error_message)
+        return format_aadhar_number(v)
 
 
 class Course(BaseModel):
