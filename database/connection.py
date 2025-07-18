@@ -74,6 +74,7 @@ def init_database():
     conn.close()
 
     set_admission_id_start()
+    init_users_table()
 
 
 def get_db_connection():
@@ -384,5 +385,23 @@ def init_documents_table():
         """
     )
 
+    conn.commit()
+    conn.close()
+
+
+def init_users_table():
+    """Initialize the users table"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            hashed_password TEXT NOT NULL,
+            role TEXT NOT NULL CHECK(role IN ('staff', 'admin'))
+        )
+        """
+    )
     conn.commit()
     conn.close()

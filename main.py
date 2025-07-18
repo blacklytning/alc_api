@@ -1,8 +1,13 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from database.user_repository import get_user_by_username, create_user, user_count
+from auth_utils import hash_password, verify_password, create_access_token, decode_access_token
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from typing import Optional
 
 # Import database initialization
 from database.connection import (init_courses_table, init_database,
@@ -67,6 +72,74 @@ async def startup_event():
     init_attendance_table()
     init_documents_table()
 
+
+# Pydantic models for auth
+class UserRegister(BaseModel):
+    username: str
+    password: str
+    role: str  # 'admin' or 'staff'
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+# OAuth2 scheme
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+
+# Dependency to get current user from JWT
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    user, _ = get_user_by_username(payload.get("sub"))
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+# Dependency to get current user from JWT
+def get_current_user_optional(token: str = Depends(oauth2_scheme)):
+    if user_count() == 0:
+        return None
+    return get_current_user(token)
+
+@app.post("/register", response_model=Token)
+def register(user: UserRegister, current_user=Depends(get_current_user_optional)):
+    if user_count() == 0:
+        # First user must be admin
+        if user.role != "admin":
+            raise HTTPException(status_code=400, detail="First user must be an admin")
+    else:
+        # Only allow admins to register new users
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        if current_user.role != "admin":
+            raise HTTPException(status_code=403, detail="Only admins can create new users")
+    existing_user, _ = get_user_by_username(user.username)
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    if user.role not in ("admin", "staff"):
+        raise HTTPException(status_code=400, detail="Role must be 'admin' or 'staff'")
+    hashed_pw = hash_password(user.password)
+    new_user = create_user(user.username, hashed_pw, user.role)
+    token = create_access_token({"sub": new_user.username, "role": new_user.role})
+    return {"access_token": token, "token_type": "bearer"}
+
+@app.post("/login", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user, hashed_pw = get_user_by_username(form_data.username)
+    if not user or not verify_password(form_data.password, hashed_pw):
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+    token = create_access_token({"sub": user.username, "role": user.role})
+    return {"access_token": token, "token_type": "bearer"}
+
+# Example protected route
+@app.get("/me")
+def read_users_me(current_user=Depends(get_current_user)):
+    return current_user
 
 @app.get("/")
 def read_root():

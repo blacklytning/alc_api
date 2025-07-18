@@ -3,6 +3,11 @@ from typing import Optional
 from pydantic import BaseModel, Field, validator
 from validation import validate_mobile_number, validate_aadhar_number, format_mobile_number, format_aadhar_number
 
+class User(BaseModel):
+    id: int
+    username: str
+    role: str  # 'staff' or 'admin'
+
 
 class StudentEnquiry(BaseModel):
     firstName: str
