@@ -3,4 +3,5 @@ routers/__pycache__/
 student_data.db
 uploads/
 backups/
+.env
 
