@@ -1,6 +1,6 @@
 import os
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -135,6 +135,28 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=401, detail="Incorrect username or password")
     token = create_access_token({"sub": user.username, "role": user.role})
     return {"access_token": token, "token_type": "bearer"}
+
+@app.post("/change-password")
+def change_password(
+    old_password: str = Body(...),
+    new_password: str = Body(...),
+    current_user=Depends(get_current_user)
+):
+    # Fetch user and hashed password
+    user, hashed_pw = get_user_by_username(current_user.username)
+    if not user or not verify_password(old_password, hashed_pw):
+        raise HTTPException(status_code=401, detail="Incorrect old password")
+    # Hash new password and update in DB
+    from database.connection import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET hashed_password = ? WHERE username = ?",
+        (hash_password(new_password), current_user.username)
+    )
+    conn.commit()
+    conn.close()
+    return {"detail": "Password changed successfully"}
 
 # Example protected route
 @app.get("/me")
