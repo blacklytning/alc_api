@@ -1,13 +1,17 @@
 import os
+import sys
+import uvicorn
 
 from fastapi import FastAPI, Depends, HTTPException, status, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from database.user_repository import get_user_by_username, create_user, user_count
 from auth_utils import hash_password, verify_password, create_access_token, decode_access_token
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Optional
+from contextlib import asynccontextmanager
 
 # Import database initialization
 from database.connection import (init_courses_table, init_database,
@@ -29,12 +33,25 @@ DOCUMENTS_FOLDER = "uploads/documents"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(DOCUMENTS_FOLDER, exist_ok=True)
 
-app = FastAPI(
-    title="Student Management System API",
-    description="A comprehensive API for managing student enquiries, admissions, courses, follow-ups, and settings",
-    version="1.0.0",
-)
+# Initialize database on startup
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize database tables on startup"""
+    init_database()
+    init_courses_table()
+    init_followups_table()
+    init_fee_payments_table()
+    init_settings_table()
+    init_attendance_table()
+    init_documents_table()
+    print("App is starting")
+    yield
+    print("App is shutting down")
 
+app = FastAPI(lifespan=lifespan)
+print(
+    "Nooblet"
+)
 # Add CORS middleware to allow frontend requests (Verify for prod)
 app.add_middleware(
     CORSMiddleware,
@@ -59,18 +76,28 @@ app.include_router(settings_router)
 app.include_router(attendance_router)
 app.include_router(documents_router)
 
+def resource_path(relative_path):
+    """Get the absolute path to resource, works for dev and PyInstaller"""
+    try:
+        # PyInstaller sets a _MEIPASS attribute to provide access to packaged files
+        if hasattr(sys, '_MEIPASS2'):
+            return os.path.join(sys._MEIPASS, relative_path)
+        else:
+            return os.path.abspath(relative_path)
+    except Exception as e:
+        print(f"Error in resource_path: {e}")
+        return None
 
-# Initialize database on startup
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database tables on startup"""
-    init_database()
-    init_courses_table()
-    init_followups_table()
-    init_fee_payments_table()
-    init_settings_table()
-    init_attendance_table()
-    init_documents_table()
+static_path = resource_path("frontend/dist")
+if static_path is None or not os.path.exists(os.path.join(static_path, 'index.html')):
+    print("Error: Static directory or index.html not found!")
+print(f"Looking for index.html at: {static_path}")
+print(f"Looking for assets at: {os.path.join(static_path, 'assets')}")
+
+# Mount static files
+app.mount("/assets", StaticFiles(directory=os.path.join(static_path, "assets")), name="assets")
+
+
 
 
 # Pydantic models for auth
@@ -163,23 +190,10 @@ def change_password(
 def read_users_me(current_user=Depends(get_current_user)):
     return current_user
 
-@app.get("/")
-def read_root():
-    return {
-        "message": "Student Management System API",
-        "version": "1.0.0",
-        "endpoints": {
-            "enquiries": "/api/enquiries",
-            "admissions": "/api/admissions",
-            "courses": "/api/courses",
-            "fees": "/api/fees",
-            "followups": "/api/followups",
-            "settings": "/api/settings",
-            "stats": "/api/stats",
-            "attendance": "/api/attendance",
-            "documents": "/api/documents",
-            "files": "/api/file/{filename}",
-            "docs": "/docs",
-            "redoc": "/redoc",
-        },
-    }
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+    index_path = os.path.join("frontend","dist","index.html")
+    return FileResponse(index_path)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="localhost", port=8000)

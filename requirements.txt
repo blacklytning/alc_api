@@ -1,4 +1,5 @@
 fastapi[standard-no-fastapi-cloud-cli]
 passlib[bcrypt]
 PyJWT
-
+tzdata
+cffi
