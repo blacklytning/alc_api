@@ -276,7 +276,7 @@ def init_settings_table():
             INSERT INTO institute_settings (name, address, phone, email, website)
             VALUES (?, ?, ?, ?, ?)
             """,
-            ("Your Institute Name", "", "", "", ""),
+            ("EduManage", "", "", "", ""),
         )
 
     conn.commit()

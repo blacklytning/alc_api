@@ -23,7 +23,7 @@ def get_institute_settings() -> Dict[str, Any]:
             # Return default settings if none exist
             return {
                 "id": 0,
-                "name": "Your Institute Name",
+                "name": "EduManage",
                 "centerCode": "",
                 "address": "",
                 "phone": "",
