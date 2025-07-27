@@ -158,6 +158,13 @@ def change_password(
     conn.close()
     return {"detail": "Password changed successfully"}
 
+
+@app.get("/check-setup")
+def check_setup():
+    if user_count() == 0:
+        raise HTTPException(status_code=307)
+    return {"setup_complete": True}
+
 # Example protected route
 @app.get("/me")
 def read_users_me(current_user=Depends(get_current_user)):
