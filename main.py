@@ -1,6 +1,7 @@
 import os
 import sys
 import uvicorn
+import webbrowser
 
 from fastapi import FastAPI, Depends, HTTPException, status, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,6 +46,8 @@ async def lifespan(app: FastAPI):
     init_attendance_table()
     init_documents_table()
     print("App is starting")
+    import threading
+    threading.Timer(1, lambda: webbrowser.open("http://127.0.0.1:8000/login")).start()
     yield
     print("App is shutting down")
 
@@ -196,4 +199,9 @@ async def serve_react_app(full_path: str):
     return FileResponse(index_path)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8000)
+    if sys.platform == "win32":
+        # This will hide the console window when running the FastAPI server on Windows
+        uvicorn.run(app, host="127.0.0.1", port=8000, use_colors=False)
+    else:
+        # For non-Windows systems, run normally
+        uvicorn.run(app, host="127.0.0.1", port=8000)
