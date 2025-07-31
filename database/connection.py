@@ -339,8 +339,8 @@ def init_documents_table():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             student_id INTEGER NOT NULL,
             document_type TEXT NOT NULL CHECK(document_type IN (
-                'SIGNED_ADMISSION_FORM', 'IDENTITY_PROOF', 'ADDRESS_PROOF', 
-                'EDUCATIONAL_CERTIFICATE', 'OTHER'
+                'SIGNED_ADMISSION_FORM', 'IDENTITY_PROOF', 'ADDRESS_PROOF',
+                'EDUCATIONAL_CERTIFICATE', 'FINAL_CERTIFICATE', 'OTHER'
             )),
             filename TEXT NOT NULL,
             original_filename TEXT NOT NULL,

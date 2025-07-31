@@ -74,7 +74,7 @@ async def upload_document(
         validate_file(file)
         
         # Validate document type
-        valid_types = ["SIGNED_ADMISSION_FORM", "IDENTITY_PROOF", "ADDRESS_PROOF", "EDUCATIONAL_CERTIFICATE", "OTHER"]
+        valid_types = ["SIGNED_ADMISSION_FORM", "IDENTITY_PROOF", "ADDRESS_PROOF", "EDUCATIONAL_CERTIFICATE", "FINAL_CERTIFICATE", "OTHER"]
         if document_type not in valid_types:
             raise HTTPException(status_code=400, detail="Invalid document type")
         
