@@ -196,6 +196,11 @@ class DatabaseStatsResponse(BaseModel):
     backupHistory: list
 
 
+class Denomination(BaseModel):
+    value: int
+    count: int
+    serials: list[str] = []
+
 class PaymentCreate(BaseModel):
     student_id: int = Field(..., description="ID of the student")
     amount: float = Field(..., description="Payment amount")
@@ -206,6 +211,9 @@ class PaymentCreate(BaseModel):
     late_fee: Optional[float] = Field(0, description="Late fee amount")
     discount: Optional[float] = Field(0, description="Discount amount")
     handled_by: Optional[str] = Field("System User", description="Staff member who handled the payment")
+    denominations: list[Denomination] = Field(default_factory=list, description="List of denomination objects")
+    cheque_number: Optional[str] = Field(None, description="Cheque number for cheque payments")
+    bank_name: Optional[str] = Field(None, description="Bank name for cheque payments")
 
 
 class DocumentUpload(BaseModel):

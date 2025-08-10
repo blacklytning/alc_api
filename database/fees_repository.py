@@ -1,4 +1,5 @@
 import sqlite3
+import json
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 from .connection import get_db_connection
@@ -10,14 +11,22 @@ class FeesRepository:
         """Create a new payment record"""
         conn = get_db_connection()
         cursor = conn.cursor()
-
         try:
+            denominations = payment_data.get("denominations")
+            cheque_number = payment_data.get("cheque_number", "")
+            bank_name = payment_data.get("bank_name", "")
+
+            # Debug prints
+            print("[DEBUG] Received payment_data:", payment_data)
+            print("[DEBUG] Serialized denominations:", json.dumps(denominations) if denominations else None)
+
             cursor.execute(
                 """
                 INSERT INTO fee_payments (
                     student_id, amount, payment_date, payment_method,
-                    transaction_id, notes, late_fee, discount, handled_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    transaction_id, notes, late_fee, discount, handled_by,
+                    denominations, cheque_number, bank_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     payment_data["student_id"],
@@ -29,6 +38,9 @@ class FeesRepository:
                     payment_data.get("late_fee", 0),
                     payment_data.get("discount", 0),
                     payment_data.get("handled_by", "System User"),
+                    json.dumps(denominations) if denominations else None,
+                    cheque_number,
+                    bank_name,
                 ),
             )
 
@@ -53,6 +65,7 @@ class FeesRepository:
                 fp.id, fp.student_id, fp.amount, fp.payment_date,
                 fp.payment_method, fp.transaction_id, fp.notes,
                 fp.late_fee, fp.discount, fp.handled_by, fp.created_at,
+                fp.denominations, fp.cheque_number, fp.bank_name,
                 sa.first_name, sa.middle_name, sa.last_name,
                 sa.mobile_number, sa.course_name
             FROM fee_payments fp
@@ -78,9 +91,12 @@ class FeesRepository:
                 "discount": row[8],
                 "handled_by": row[9],
                 "created_at": row[10],
-                "student_name": f"{row[11]} {row[12] or ''} {row[13]}".strip(),
-                "mobile_number": row[14],
-                "course_name": row[15],
+                "denominations": json.loads(row[11]) if row[11] else [],
+                "cheque_number": row[12],
+                "bank_name": row[13],
+                "student_name": f"{row[14]} {row[15] or ''} {row[16]}".strip(),
+                "mobile_number": row[17],
+                "course_name": row[18],
             })
 
         return payments
@@ -95,7 +111,8 @@ class FeesRepository:
             """
             SELECT 
                 id, student_id, amount, payment_date, payment_method,
-                transaction_id, notes, late_fee, discount, handled_by, created_at
+                transaction_id, notes, late_fee, discount, handled_by, created_at,
+                denominations, cheque_number, bank_name
             FROM fee_payments
             WHERE student_id = ?
             ORDER BY payment_date DESC
@@ -120,6 +137,9 @@ class FeesRepository:
                 "discount": row[8],
                 "handled_by": row[9],
                 "created_at": row[10],
+                "denominations": json.loads(row[11]) if row[11] else [],
+                "cheque_number": row[12],
+                "bank_name": row[13],
             })
 
         return payments

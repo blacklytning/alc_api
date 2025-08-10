@@ -204,6 +204,10 @@ def init_fee_payments_table():
             late_fee REAL DEFAULT 0,
             discount REAL DEFAULT 0,
             handled_by TEXT NOT NULL,
+            denominations TEXT,
+            serials_500 TEXT,
+            cheque_number TEXT,
+            bank_name TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (student_id) REFERENCES student_admissions (id) ON DELETE CASCADE
         )

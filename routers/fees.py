@@ -20,6 +20,9 @@ def create_payment(payment: PaymentCreate) -> Dict[str, Any]:
             "late_fee": payment.late_fee or 0,
             "discount": payment.discount or 0,
             "handled_by": payment.handled_by or "System User",
+            "denominations": [d.dict() for d in payment.denominations] if payment.denominations else [],
+            "cheque_number": getattr(payment, "cheque_number", ""),
+            "bank_name": getattr(payment, "bank_name", ""),
         }
 
         payment_id = FeesRepository.create_payment(payment_data)
