@@ -4,6 +4,81 @@ from .connection import get_db_connection
 
 
 class AdmissionRepository:
+
+    @staticmethod
+    def update_exam_result(
+        admission_id: int, exam_date: str, era_score: int, final_score: int, result: str
+    ) -> bool:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id FROM student_admissions WHERE id = ?", (admission_id,)
+        )
+        if not cursor.fetchone():
+            conn.close()
+            return False
+        cursor.execute(
+            """
+            UPDATE student_admissions
+            SET exam_date = ?, era_score = ?, final_score = ?, result = ?
+            WHERE id = ?
+            """,
+            (exam_date, era_score, final_score, result, admission_id),
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    @staticmethod
+    def update_parent_credentials(
+        admission_id: int, parent_name: str, parent_mobile: str, parent_email: str
+    ) -> bool:
+        """Update parent credentials for a student admission"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id FROM student_admissions WHERE id = ?", (admission_id,)
+        )
+        if not cursor.fetchone():
+            conn.close()
+            return False
+        cursor.execute(
+            """
+            UPDATE student_admissions
+            SET parent_name = ?, parent_mobile = ?, parent_email = ?
+            WHERE id = ?
+            """,
+            (parent_name, parent_mobile, parent_email, admission_id),
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    @staticmethod
+    def update_credentials(
+        admission_id: int, learner_code: str, era_id: str, era_password: str
+    ) -> bool:
+        """Update learner credentials for a student admission"""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id FROM student_admissions WHERE id = ?", (admission_id,)
+        )
+        if not cursor.fetchone():
+            conn.close()
+            return False
+        cursor.execute(
+            """
+            UPDATE student_admissions
+            SET learner_code = ?, era_id = ?, era_password = ?
+            WHERE id = ?
+            """,
+            (learner_code, era_id, era_password, admission_id),
+        )
+        conn.commit()
+        conn.close()
+        return True
+
     @staticmethod
     def create(admission_data: Dict[str, Any]) -> int:
         """Create a new admission and return its ID"""
@@ -170,7 +245,9 @@ class AdmissionRepository:
         cursor = conn.cursor()
 
         # Check if admission exists
-        cursor.execute("SELECT id FROM student_admissions WHERE id = ?", (admission_id,))
+        cursor.execute(
+            "SELECT id FROM student_admissions WHERE id = ?", (admission_id,)
+        )
         if not cursor.fetchone():
             conn.close()
             return False
@@ -216,14 +293,17 @@ class AdmissionRepository:
         if "photoFilename" in admission_data and admission_data["photoFilename"]:
             cursor.execute(
                 "UPDATE student_admissions SET photo_filename = ? WHERE id = ?",
-                (admission_data["photoFilename"], admission_id)
+                (admission_data["photoFilename"], admission_id),
             )
 
         # Update signature filename if provided
-        if "signatureFilename" in admission_data and admission_data["signatureFilename"]:
+        if (
+            "signatureFilename" in admission_data
+            and admission_data["signatureFilename"]
+        ):
             cursor.execute(
                 "UPDATE student_admissions SET signature_filename = ? WHERE id = ?",
-                (admission_data["signatureFilename"], admission_id)
+                (admission_data["signatureFilename"], admission_id),
             )
 
         conn.commit()
