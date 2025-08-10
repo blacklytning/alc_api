@@ -30,31 +30,6 @@ class AdmissionRepository:
         return True
 
     @staticmethod
-    def update_parent_credentials(
-        admission_id: int, parent_name: str, parent_mobile: str, parent_email: str
-    ) -> bool:
-        """Update parent credentials for a student admission"""
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id FROM student_admissions WHERE id = ?", (admission_id,)
-        )
-        if not cursor.fetchone():
-            conn.close()
-            return False
-        cursor.execute(
-            """
-            UPDATE student_admissions
-            SET parent_name = ?, parent_mobile = ?, parent_email = ?
-            WHERE id = ?
-            """,
-            (parent_name, parent_mobile, parent_email, admission_id),
-        )
-        conn.commit()
-        conn.close()
-        return True
-
-    @staticmethod
     def update_credentials(
         admission_id: int, learner_code: str, era_id: str, era_password: str
     ) -> bool:
@@ -198,7 +173,9 @@ class AdmissionRepository:
                    mobile_number, alternate_mobile_number, category,
                    educational_qualification, course_name, timing,
                    certificate_name, referred_by,
-                   photo_filename, signature_filename, created_at
+                   photo_filename, signature_filename, created_at,
+                   learner_code, era_id, era_password,
+                   exam_date, era_score, final_score, result
             FROM student_admissions
             WHERE id = ?
             """,
@@ -236,6 +213,13 @@ class AdmissionRepository:
             "photoFilename": row[21],
             "signatureFilename": row[22],
             "createdAt": row[23],
+            "learner_code": row[24],
+            "era_id": row[25],
+            "era_password": row[26],
+            "exam_date": row[27],
+            "era_score": row[28],
+            "final_score": row[29],
+            "result": row[30],
         }
 
     @staticmethod

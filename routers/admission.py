@@ -3,7 +3,31 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, ValidationError
 
+from database.admission_repository import AdmissionRepository
+from file_handler import FileHandler
+from models import StudentAdmission
+
 router = APIRouter(prefix="/api", tags=["admissions"])
+
+
+class ExamResult(BaseModel):
+    exam_date: str
+    era_score: int
+    final_score: int
+    result: str  # 'pass' or 'fail'
+
+
+# Endpoint to update exam result
+@router.put("/admission/{admission_id}/exam_result")
+def update_exam_result(admission_id: int, exam: ExamResult):
+    success = AdmissionRepository.update_exam_result(
+        admission_id, exam.exam_date, exam.era_score, exam.final_score, exam.result
+    )
+    if not success:
+        raise HTTPException(
+            status_code=404, detail="Admission not found or update failed"
+        )
+    return {"status": "success"}
 
 
 # Model for learner credentials
@@ -24,11 +48,6 @@ def update_learner_credentials(admission_id: int, creds: LearnerCredentials):
             status_code=404, detail="Admission not found or update failed"
         )
     return {"status": "success"}
-
-
-from database.admission_repository import AdmissionRepository
-from file_handler import FileHandler
-from models import StudentAdmission
 
 
 @router.post("/admission")
