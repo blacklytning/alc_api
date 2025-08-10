@@ -1,13 +1,34 @@
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
+
+router = APIRouter(prefix="/api", tags=["admissions"])
+
+
+# Model for learner credentials
+class LearnerCredentials(BaseModel):
+    learner_code: str
+    era_id: str
+    era_password: str
+
+
+# Endpoint to update learner credentials
+@router.put("/admission/{admission_id}/credentials")
+def update_learner_credentials(admission_id: int, creds: LearnerCredentials):
+    success = AdmissionRepository.update_credentials(
+        admission_id, creds.learner_code, creds.era_id, creds.era_password
+    )
+    if not success:
+        raise HTTPException(
+            status_code=404, detail="Admission not found or update failed"
+        )
+    return {"status": "success"}
+
 
 from database.admission_repository import AdmissionRepository
 from file_handler import FileHandler
 from models import StudentAdmission
-
-router = APIRouter(prefix="/api", tags=["admissions"])
 
 
 @router.post("/admission")
@@ -104,9 +125,7 @@ async def create_admission(
         }
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=422, detail=f"Validation error: {str(e)}"
-        )
+        raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error creating admission: {str(e)}"
@@ -173,14 +192,14 @@ async def update_admission(
         # Handle file updates
         photo_filename = None
         signature_filename = None
-        
+
         if photo or signature:
             photo_filename, signature_filename = FileHandler.update_admission_files(
                 mobile_number=admission_model.mobileNumber,
                 photo=photo,
                 signature=signature,
                 old_photo_filename=existing_admission.get("photoFilename"),
-                old_signature_filename=existing_admission.get("signatureFilename")
+                old_signature_filename=existing_admission.get("signatureFilename"),
             )
 
         # Prepare admission data for update
@@ -215,7 +234,7 @@ async def update_admission(
 
         # Update in database
         success = AdmissionRepository.update(admission_id, admission_data)
-        
+
         if not success:
             raise HTTPException(status_code=500, detail="Failed to update admission")
 
@@ -228,9 +247,7 @@ async def update_admission(
         }
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=422, detail=f"Validation error: {str(e)}"
-        )
+        raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
     except HTTPException:
         raise
     except Exception as e:
